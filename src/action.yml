@@ -1,0 +1,18 @@
+name: 'OCI Token Exchange Action'
+description: 'Action to exchange a GitHub token for an OCI UPST'
+inputs:
+  client_id:  # id of input
+    description: 'client_id of OCI Domain Confidential Application'
+    required: true
+  client_secret:  # id of input
+    description: 'client_secret of OCI Domain Confidential Application'
+    required: true
+  domain_base_url:  # id of input
+    description: 'Base URL of OCI Domain'
+    required: true
+runs:
+  using: 'node20'
+  main: 'dist/main.ts'
+pre:
+  - run: npm install
+  - run: npx tsc
