@@ -1,4 +1,4 @@
-name: 'OCI Token Exchange Action'
+name: 'oci-token-exchange-action'
 description: 'Action to exchange a GitHub token for an OCI UPST'
 inputs:
   client_id:  # id of input
