@@ -1,0 +1,34 @@
+name: Run OCI Token Exchange Action
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '20'
+
+    - name: Install OCI CLI
+      run: |
+        curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash
+      shell: bash
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Compile TypeScript
+      run: npx tsc
+
+    - name: Run OCI Token Exchange Action
+      uses: gtrevorrow/oci-token-exchange-action@v1
+      with:
+        client_id: ${{ secrets.CLIENT_ID }}
+        client_secret: ${{ secrets.CLIENT_SECRET }}
+        domain_base_url: ${{ vars.DOMAIN_BASE_URL }}

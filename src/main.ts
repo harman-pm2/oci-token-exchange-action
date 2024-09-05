@@ -34,7 +34,6 @@ async function token_exchange_jwt_to_upst(token_exchange_url: string, client_cre
   return response.data;
 }
 
-
 async function run(): Promise<void> {
   try {
     // Setup and Initialization
@@ -45,6 +44,7 @@ async function run(): Promise<void> {
     const clientId = core.getInput('client_id', { required: true });
     const clientSecret = core.getInput('client_secret', { required: true });
     const domainBaseURL = core.getInput('domain_base_url', { required: true });
+    
 
     // Get github OIDC JWT token
     const idToken = await core.getIDToken();
