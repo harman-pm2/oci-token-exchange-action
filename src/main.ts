@@ -18,6 +18,22 @@ const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
 });
 
+async function calc_fingerprint(publicKey: crypto.KeyObject) : Promise<string> {
+  const publicKeyData = publicKey.export({ type: 'spki', format: 'der' });
+  const hash = crypto.createHash('sha256');
+  hash.update(publicKeyData);
+  return hash.digest('base64');
+}
+
+async function validate_oci_cli_installed_and_configured() {
+  try {
+      await exec.exec('oci', ['--version']);
+  } catch (error) {
+      
+      throw new Error('OCI CLI is not installed or not configured');
+  }
+}
+
 async function token_exchange_jwt_to_upst(token_exchange_url: string, client_cred: string, oci_public_key: string, subject_token: string) {
   const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -44,7 +60,11 @@ async function run(): Promise<void> {
     const clientId = core.getInput('client_id', { required: true });
     const clientSecret = core.getInput('client_secret', { required: true });
     const domainBaseURL = core.getInput('domain_base_url', { required: true });
-    
+    const ociUser = core.getInput('oci_user', { required: true });
+    const ociTenancy = core.getInput('oci_tenancy', { required: true });
+    const ociRegion = core.getInput('oci_region', { required: true });
+  
+
 
     // Get github OIDC JWT token
     const idToken = await core.getIDToken();
@@ -55,19 +75,14 @@ async function run(): Promise<void> {
     // Setup OCI Domain confidential application OAuth Client Credentials
     let clientCreds = `${clientId}:${clientSecret}`;
     let authStringEncoded = Buffer.from(clientCreds).toString('base64');
-
+    const ociFingerprint = await calc_fingerprint(publicKey);
     // Get the B64 encoded public key DER
     let publicKeyB64 = publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
 
     //Exchange JWT to UPST
     let upstToken = await token_exchange_jwt_to_upst(`${domainBaseURL}/oauth2/v1/token`, authStringEncoded, publicKeyB64, idToken);
     console.log(upstToken);
-
-    // Save the UPST token to the file system
-    fs.writeFileSync(path.join(workspace, 'upst_token.txt'), upstToken.access_token);
-
-    //Save the private key to the file system in PEM format 
-    fs.writeFileSync(path.join(workspace, 'private_key.pem'), privateKey.export({ type: 'pkcs1', format: 'pem' }) as string);
+    await configure_oci_cli(privateKey, publicKey, upstToken.access_token, ociUser, ociFingerprint, ociTenancy, ociRegion);
 
     // Error Handling
   } catch (error) {
@@ -76,3 +91,32 @@ async function run(): Promise<void> {
 }
 
 run();
+
+async function configure_oci_cli(privateKey, publicKey, upstToken: string, ociUser: string, ociFingerprint: string, ociTenancy: string, ociRegion: string) {
+  // Setup and Initialization OCI CLI Profile
+  const workspace = process.env.GITHUB_WORKSPACE || '';
+  const ociConfigDir = path.join(workspace, '.oci');
+  const ociConfigFile = path.join(ociConfigDir, 'config');
+  const ociPrivateKeyFile = path.join(workspace, 'private_key.pem');
+  const ociPublicKeyFile = path.join(workspace, 'public_key.pem');
+  const upstTokenFile = path.join(workspace, 'session');
+  const ociConfig = `[DEFAULT]
+  user=${ociUser}
+  fingerprint=${ociFingerprint}
+  key_file=${ociPrivateKeyFile}
+  tenancy=${ociTenancy}
+  region=${ociRegion}
+  security_token=${upstToken}
+  `;
+  // Create the .oci directory
+  await io.mkdirP(ociConfigDir);
+  // Write the OCI config file
+  fs.writeFileSync(ociConfigFile, ociConfig);
+  // Write the private key file
+  fs.writeFileSync(ociPrivateKeyFile, privateKey.export({ type: 'pkcs1', format: 'pem' }) as string);
+  // Write the public key file
+  fs.writeFileSync(ociPublicKeyFile, publicKey.export({ type: 'spki', format: 'pem' }) as string);
+  // Write the UPST token to the file system
+  fs.writeFileSync(upstTokenFile, upstToken);
+  
+}

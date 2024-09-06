@@ -17,7 +17,7 @@ jobs:
 
     - name: Install OCI CLI
       run: |
-        curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash
+        curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh --accept-all-defaults | bash
       shell: bash
 
     - name: Install dependencies
@@ -32,3 +32,7 @@ jobs:
         client_id: ${{ secrets.CLIENT_ID }}
         client_secret: ${{ secrets.CLIENT_SECRET }}
         domain_base_url: ${{ vars.DOMAIN_BASE_URL }}
+        oci_user: ${{ secrets.OCI_USER }}
+        oci_tenancy: ${{ vars.OCI_TENANCY }}
+        oci_region: ${{ vars.OCI_REGION }}
+    
