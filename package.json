@@ -22,7 +22,7 @@
         "oracle-cloud-infrastructure"
     ],
     "exports": {
-        ".": "./dist/index.js"
+        ".": "./dist/main.js"
     },
     "engines": {
         "node": ">=20"
