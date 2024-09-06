@@ -24,7 +24,7 @@ jobs:
       run: npm install
 
     - name: Run OCI Token Exchange Action
-      uses: gtrevorrow/oci-token-exchange-action@v0.0.7
+      uses: gtrevorrow/oci-token-exchange-action@v0.0.9
       with:
         client_id: ${{ secrets.CLIENT_ID }}
         client_secret: ${{ secrets.CLIENT_SECRET }}
