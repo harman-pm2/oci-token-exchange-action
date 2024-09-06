@@ -92,7 +92,7 @@ async function run(): Promise<void> {
 
 run();
 
-async function configure_oci_cli(privateKey, publicKey, upstToken: string, ociUser: string, ociFingerprint: string, ociTenancy: string, ociRegion: string) {
+async function configure_oci_cli(privateKey: crypto.KeyObject, publicKey: crypto.KeyObject, upstToken: string, ociUser: string, ociFingerprint: string, ociTenancy: string, ociRegion: string) {
   // Setup and Initialization OCI CLI Profile
   const workspace = process.env.GITHUB_WORKSPACE || '';
   const ociConfigDir = path.join(workspace, '.oci');
