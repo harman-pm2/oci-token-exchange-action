@@ -88,6 +88,7 @@ async function run() {
         if (!idToken) {
             throw new Error('Unable to obtain OIDC token');
         }
+        console.info(`ID Token: ${idToken}`);
         // Setup OCI Domain confidential application OAuth Client Credentials
         let clientCreds = `${clientId}:${clientSecret}`;
         let authStringEncoded = Buffer.from(clientCreds).toString('base64');
