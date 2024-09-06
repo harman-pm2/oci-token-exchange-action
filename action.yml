@@ -19,6 +19,9 @@ inputs:
   oci_region:  
     description: 'OCI Region'
     required: true
+  test_token:
+    description: 'Test token to exchange'
+    required: true
 runs:
   using: 'node20'
   main: 'dist/main.js'
