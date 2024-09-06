@@ -28,6 +28,7 @@
         "node": ">=20"
     },
     "scripts": {
+        "build": "tsc",
         "bundle": "npm run format:write && npm run package",
         "format:write": "npx prettier --write .",
         "format:check": "npx prettier --check .",

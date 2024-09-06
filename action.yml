@@ -21,4 +21,4 @@ inputs:
     required: true
 runs:
   using: 'node20'
-  main: 'dist/main.ts'
+  main: 'dist/main.js'

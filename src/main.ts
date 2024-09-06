@@ -34,7 +34,7 @@ async function validate_oci_cli_installed_and_configured() {
   }
 }
 
-async function token_exchange_jwt_to_upst(token_exchange_url: string, client_cred: string, oci_public_key: string, subject_token: string) {
+async function token_exchange_jwt_to_upst(token_exchange_url: string, client_cred: string, oci_public_key: string, subject_token: string): Promise<any> {
   const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Authorization': `Basic ${client_cred}`
@@ -78,10 +78,10 @@ async function run(): Promise<void> {
     const ociFingerprint = await calc_fingerprint(publicKey);
     // Get the B64 encoded public key DER
     let publicKeyB64 = publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
-
+    console.info(`Public Key B64: ${publicKeyB64}`);
     //Exchange JWT to UPST
     let upstToken = await token_exchange_jwt_to_upst(`${domainBaseURL}/oauth2/v1/token`, authStringEncoded, publicKeyB64, idToken);
-    console.log(upstToken);
+    console.log(`UPST Token:  ${upstToken}`);
     await configure_oci_cli(privateKey, publicKey, upstToken.access_token, ociUser, ociFingerprint, ociTenancy, ociRegion);
 
     // Error Handling
