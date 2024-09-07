@@ -117,7 +117,7 @@ async function run(): Promise<void> {
 
     //Exchange JWT to UPST
     let upstToken = await token_exchange_jwt_to_upst(`${domainBaseURL}/oauth2/v1/token`, authStringEncoded, publicKeyB64, testToken?testToken : idToken);
-    console.log(`UPST Token:  ${upstToken}`);
+    console.log(`UPST Token:  ${upstToken.access_token}`);
     await configure_oci_cli(privateKey, publicKey, upstToken.access_token, ociUser, ociFingerprint, ociTenancy, ociRegion);
 
     // Error Handling
