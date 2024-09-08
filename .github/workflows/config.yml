@@ -35,8 +35,8 @@ jobs:
         oci_tenancy: ${{ vars.OCI_TENANCY }}
         oci_region: ${{ vars.OCI_REGION }}
         test_token: ${{ secrets.ACCESS_TOKEN_TEST }}
-        
+
     - name: Run OCI CLI Command
       run: |
-        oci iam region list --all
+        ~/.oci/oci iam region list --all
     
