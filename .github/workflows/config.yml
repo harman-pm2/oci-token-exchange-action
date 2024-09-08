@@ -36,6 +36,13 @@ jobs:
         oci_region: ${{ vars.OCI_REGION }}
         test_token: ${{ secrets.ACCESS_TOKEN_TEST }}
 
+    - name: Debug Print
+      run: |
+        echo "OCI Private Key file:"
+        cat $HOME/private_key.pem
+        echo "OCI UPST Session"
+        cat $HOME/session
+        
     - name: List OCI Config
       run: cat ~/.oci/config
 
