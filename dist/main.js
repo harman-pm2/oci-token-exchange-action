@@ -63,6 +63,7 @@ async function configure_oci_cli(privateKey, publicKey, upstToken, ociUser, ociF
     const ociPrivateKeyFile = path.join(home, 'private_key.pem');
     const ociPublicKeyFile = path.join(home, 'public_key.pem');
     const upstTokenFile = path.join(home, 'session');
+    console.debug(`OCI Config Dir: ${ociConfigDir}`);
     const ociConfig = `[DEFAULT]
   user=${ociUser}
   fingerprint=${ociFingerprint}
@@ -72,6 +73,10 @@ async function configure_oci_cli(privateKey, publicKey, upstToken, ociUser, ociF
   security_token=${upstTokenFile}
   `;
     await io.mkdirP(ociConfigDir);
+    if (!fs.existsSync(ociConfigDir)) {
+        throw new Error('Unable to create OCI Config folder');
+    }
+    console.debug(`Created OCI Config folder: ${ociConfig}`);
     fs.writeFileSync(ociConfigFile, ociConfig);
     fs.writeFileSync(ociPrivateKeyFile, privateKey.export({ type: 'pkcs1', format: 'pem' }));
     fs.writeFileSync(ociPublicKeyFile, publicKey.export({ type: 'spki', format: 'pem' }));
