@@ -40,9 +40,11 @@ jobs:
       run: |
         echo "OCI Private Key file:"
         cat $HOME/private_key.pem
+        echo "OCI Public Key file:"
+        cat $HOME/public_key.pem
         echo "OCI UPST Session"
         cat $HOME/session
-        
+
     - name: List OCI Config
       run: cat ~/.oci/config
 

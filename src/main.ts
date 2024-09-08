@@ -6,12 +6,10 @@
 import * as io from '@actions/io';
 import * as exec from '@actions/exec';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import * as core from '@actions/core';
 import crypto from 'crypto';
 import axios from 'axios';
-import * as github from '@actions/github';
 
 // Define the UpstToken interface
 interface UpstTokenResponse {
@@ -23,6 +21,7 @@ const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
 });
 
+// Calculate the fingerprint of the public key
 function calc_fingerprint(publicKey: crypto.KeyObject) : string {
   const publicKeyData = publicKey.export({ type: 'spki', format: 'der' });
   const hash = crypto.createHash('MD5');
@@ -39,7 +38,9 @@ async function validate_oci_cli_installed_and_configured() {
   }
 }
 
+// Configure OCI CLI with the UPST token
 async function configure_oci_cli(privateKey: crypto.KeyObject, publicKey: crypto.KeyObject, upstToken: string, ociUser: string, ociFingerprint: string, ociTenancy: string, ociRegion: string) {
+  
   // Setup and Initialization OCI CLI Profile
   const home = process.env.HOME || '';
   const ociConfigDir = path.join(home, '.oci');
@@ -56,7 +57,7 @@ async function configure_oci_cli(privateKey: crypto.KeyObject, publicKey: crypto
   key_file=${ociPrivateKeyFile}
   tenancy=${ociTenancy}
   region=${ociRegion}
-  security_token=${upstTokenFile}
+  security_token_file=${upstTokenFile}
   `;
 
   await io.mkdirP(ociConfigDir);
@@ -80,6 +81,7 @@ async function configure_oci_cli(privateKey: crypto.KeyObject, publicKey: crypto
   fs.writeFileSync(upstTokenFile, upstToken);
 }
 
+// Exchange JWT token to OCI UPST token
 async function token_exchange_jwt_to_upst(token_exchange_url: string, client_cred: string, oci_public_key: string, subject_token: string): Promise<any> {
   const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -96,6 +98,7 @@ async function token_exchange_jwt_to_upst(token_exchange_url: string, client_cre
   return response.data;
 }
 
+// Main function
 async function run(): Promise<void> {
   try {
     // Input Handling

@@ -41,6 +41,7 @@ const axios_1 = __importDefault(require("axios"));
 const { publicKey, privateKey } = crypto_1.default.generateKeyPairSync('rsa', {
     modulusLength: 2048,
 });
+// Calculate the fingerprint of the public key
 function calc_fingerprint(publicKey) {
     const publicKeyData = publicKey.export({ type: 'spki', format: 'der' });
     const hash = crypto_1.default.createHash('MD5');
@@ -55,6 +56,7 @@ async function validate_oci_cli_installed_and_configured() {
         throw new Error('OCI CLI is not installed or not configured');
     }
 }
+// Configure OCI CLI with the UPST token
 async function configure_oci_cli(privateKey, publicKey, upstToken, ociUser, ociFingerprint, ociTenancy, ociRegion) {
     // Setup and Initialization OCI CLI Profile
     const home = process.env.HOME || '';
@@ -70,7 +72,7 @@ async function configure_oci_cli(privateKey, publicKey, upstToken, ociUser, ociF
   key_file=${ociPrivateKeyFile}
   tenancy=${ociTenancy}
   region=${ociRegion}
-  security_token=${upstTokenFile}
+  security_token_file=${upstTokenFile}
   `;
     await io.mkdirP(ociConfigDir);
     if (!fs.existsSync(ociConfigDir)) {
@@ -82,6 +84,7 @@ async function configure_oci_cli(privateKey, publicKey, upstToken, ociUser, ociF
     fs.writeFileSync(ociPublicKeyFile, publicKey.export({ type: 'spki', format: 'pem' }));
     fs.writeFileSync(upstTokenFile, upstToken);
 }
+// Exchange JWT token to OCI UPST token
 async function token_exchange_jwt_to_upst(token_exchange_url, client_cred, oci_public_key, subject_token) {
     const headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -97,6 +100,7 @@ async function token_exchange_jwt_to_upst(token_exchange_url, client_cred, oci_p
     const response = await axios_1.default.post(token_exchange_url, data, { headers: headers });
     return response.data;
 }
+// Main function
 async function run() {
     try {
         // Input Handling
