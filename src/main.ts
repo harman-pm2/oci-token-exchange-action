@@ -41,12 +41,12 @@ async function validate_oci_cli_installed_and_configured() {
 
 async function configure_oci_cli(privateKey: crypto.KeyObject, publicKey: crypto.KeyObject, upstToken: string, ociUser: string, ociFingerprint: string, ociTenancy: string, ociRegion: string) {
   // Setup and Initialization OCI CLI Profile
-  const workspace = process.env.GITHUB_WORKSPACE || '';
-  const ociConfigDir = path.join(workspace, '.oci');
+  const home = process.env.HOME || '';
+  const ociConfigDir = path.join(home, '.oci');
   const ociConfigFile = path.join(ociConfigDir, 'config');
-  const ociPrivateKeyFile = path.join(workspace, 'private_key.pem');
-  const ociPublicKeyFile = path.join(workspace, 'public_key.pem');
-  const upstTokenFile = path.join(workspace, 'session');
+  const ociPrivateKeyFile = path.join(home, 'private_key.pem');
+  const ociPublicKeyFile = path.join(home, 'public_key.pem');
+  const upstTokenFile = path.join(home, 'session');
   const ociConfig = `[DEFAULT]
   user=${ociUser}
   fingerprint=${ociFingerprint}
@@ -88,10 +88,6 @@ async function token_exchange_jwt_to_upst(token_exchange_url: string, client_cre
 
 async function run(): Promise<void> {
   try {
-    // Setup and Initialization
-    const workspace = process.env.GITHUB_WORKSPACE || '';
-    const tempDir = path.join(os.tmpdir(), 'my-action-temp');
-
     // Input Handling
     const clientId = core.getInput('client_id', { required: true });
     const clientSecret = core.getInput('client_secret', { required: true });

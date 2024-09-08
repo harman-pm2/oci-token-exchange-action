@@ -33,7 +33,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const io = __importStar(require("@actions/io"));
 const exec = __importStar(require("@actions/exec"));
 const fs = __importStar(require("fs"));
-const os = __importStar(require("os"));
 const path = __importStar(require("path"));
 const core = __importStar(require("@actions/core"));
 const crypto_1 = __importDefault(require("crypto"));
@@ -58,12 +57,12 @@ async function validate_oci_cli_installed_and_configured() {
 }
 async function configure_oci_cli(privateKey, publicKey, upstToken, ociUser, ociFingerprint, ociTenancy, ociRegion) {
     // Setup and Initialization OCI CLI Profile
-    const workspace = process.env.GITHUB_WORKSPACE || '';
-    const ociConfigDir = path.join(workspace, '.oci');
+    const home = process.env.HOME || '';
+    const ociConfigDir = path.join(home, '.oci');
     const ociConfigFile = path.join(ociConfigDir, 'config');
-    const ociPrivateKeyFile = path.join(workspace, 'private_key.pem');
-    const ociPublicKeyFile = path.join(workspace, 'public_key.pem');
-    const upstTokenFile = path.join(workspace, 'session');
+    const ociPrivateKeyFile = path.join(home, 'private_key.pem');
+    const ociPublicKeyFile = path.join(home, 'public_key.pem');
+    const upstTokenFile = path.join(home, 'session');
     const ociConfig = `[DEFAULT]
   user=${ociUser}
   fingerprint=${ociFingerprint}
@@ -95,9 +94,6 @@ async function token_exchange_jwt_to_upst(token_exchange_url, client_cred, oci_p
 }
 async function run() {
     try {
-        // Setup and Initialization
-        const workspace = process.env.GITHUB_WORKSPACE || '';
-        const tempDir = path.join(os.tmpdir(), 'my-action-temp');
         // Input Handling
         const clientId = core.getInput('client_id', { required: true });
         const clientSecret = core.getInput('client_secret', { required: true });
