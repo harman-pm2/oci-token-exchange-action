@@ -70,17 +70,12 @@ async function configure_oci_cli(privateKey, publicKey, upstToken, ociUser, ociF
   key_file=${ociPrivateKeyFile}
   tenancy=${ociTenancy}
   region=${ociRegion}
-  security_token=${upstToken}
+  security_token=${upstTokenFile}
   `;
-    // Create the .oci directory
     await io.mkdirP(ociConfigDir);
-    // Write the OCI config file
     fs.writeFileSync(ociConfigFile, ociConfig);
-    // Write the private key file
     fs.writeFileSync(ociPrivateKeyFile, privateKey.export({ type: 'pkcs1', format: 'pem' }));
-    // Write the public key file
     fs.writeFileSync(ociPublicKeyFile, publicKey.export({ type: 'spki', format: 'pem' }));
-    // Write the UPST token to the file system
     fs.writeFileSync(upstTokenFile, upstToken);
 }
 async function token_exchange_jwt_to_upst(token_exchange_url, client_cred, oci_public_key, subject_token) {
@@ -126,8 +121,8 @@ async function run() {
         console.info(`Public Key B64: ${publicKeyB64}`);
         //Exchange JWT to UPST
         let upstToken = await token_exchange_jwt_to_upst(`${domainBaseURL}/oauth2/v1/token`, authStringEncoded, publicKeyB64, testToken ? testToken : idToken);
-        console.log(`UPST Token:  ${upstToken}`);
-        await configure_oci_cli(privateKey, publicKey, upstToken.access_token, ociUser, ociFingerprint, ociTenancy, ociRegion);
+        console.log(`UPST Token:  ${upstToken.token}`);
+        await configure_oci_cli(privateKey, publicKey, upstToken.token, ociUser, ociFingerprint, ociTenancy, ociRegion);
         // Error Handling
     }
     catch (error) {
