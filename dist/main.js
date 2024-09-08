@@ -41,11 +41,11 @@ const axios_1 = __importDefault(require("axios"));
 const { publicKey, privateKey } = crypto_1.default.generateKeyPairSync('rsa', {
     modulusLength: 2048,
 });
-async function calc_fingerprint(publicKey) {
+function calc_fingerprint(publicKey) {
     const publicKeyData = publicKey.export({ type: 'spki', format: 'der' });
     const hash = crypto_1.default.createHash('sha256');
     hash.update(publicKeyData);
-    return hash.digest('base64');
+    return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1).toUpperCase();
 }
 async function validate_oci_cli_installed_and_configured() {
     try {
@@ -116,7 +116,7 @@ async function run() {
         // Setup OCI Domain confidential application OAuth Client Credentials
         let clientCreds = `${clientId}:${clientSecret}`;
         let authStringEncoded = Buffer.from(clientCreds).toString('base64');
-        const ociFingerprint = await calc_fingerprint(publicKey);
+        const ociFingerprint = calc_fingerprint(publicKey);
         // Get the B64 encoded public key DER
         let publicKeyB64 = publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
         console.debug(`Public Key B64: ${publicKeyB64}`);
