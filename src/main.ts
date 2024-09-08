@@ -68,7 +68,7 @@ async function configure_oci_cli(privateKey: crypto.KeyObject, publicKey: crypto
   
 }
 
-async function token_exchange_jwt_to_upst(token_exchange_url: string, client_cred: string, oci_public_key: string, subject_token: string): Promise<any> {
+async function token_exchange_jwt_to_upst(token_exchange_url: string, client_cred: string, oci_public_key: string, subject_token: string): Promise<string> {
   const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Authorization': `Basic ${client_cred}`
