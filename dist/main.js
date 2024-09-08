@@ -111,17 +111,17 @@ async function run() {
         if (!idToken) {
             throw new Error('Unable to obtain OIDC token');
         }
-        console.info(`ID Token: ${idToken}`);
+        console.debug(`ID Token: ${idToken}`);
         // Setup OCI Domain confidential application OAuth Client Credentials
         let clientCreds = `${clientId}:${clientSecret}`;
         let authStringEncoded = Buffer.from(clientCreds).toString('base64');
         const ociFingerprint = await calc_fingerprint(publicKey);
         // Get the B64 encoded public key DER
         let publicKeyB64 = publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
-        console.info(`Public Key B64: ${publicKeyB64}`);
+        console.debug(`Public Key B64: ${publicKeyB64}`);
         //Exchange JWT to UPST
         let upstToken = await token_exchange_jwt_to_upst(`${domainBaseURL}/oauth2/v1/token`, authStringEncoded, publicKeyB64, testToken ? testToken : idToken);
-        console.log(`UPST Token:  ${upstToken.token}`);
+        console.debug(`UPST Token:  ${upstToken.token}`);
         await configure_oci_cli(privateKey, publicKey, upstToken.token, ociUser, ociFingerprint, ociTenancy, ociRegion);
         // Error Handling
     }
