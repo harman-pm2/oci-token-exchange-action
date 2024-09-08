@@ -38,5 +38,5 @@ jobs:
 
     - name: Run OCI CLI Command
       run: |
-        ~/.oci/oci iam region list --all
+        /home/runner/bin/oci iam region list --all
     
