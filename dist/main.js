@@ -43,7 +43,7 @@ const { publicKey, privateKey } = crypto_1.default.generateKeyPairSync('rsa', {
 });
 function calc_fingerprint(publicKey) {
     const publicKeyData = publicKey.export({ type: 'spki', format: 'der' });
-    const hash = crypto_1.default.createHash('sha256');
+    const hash = crypto_1.default.createHash('MD5');
     hash.update(publicKeyData);
     return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1).toUpperCase();
 }
