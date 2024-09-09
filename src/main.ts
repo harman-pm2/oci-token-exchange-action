@@ -26,7 +26,7 @@ function calc_fingerprint(publicKey: crypto.KeyObject) : string {
   const publicKeyData = publicKey.export({ type: 'spki', format: 'der' });
   const hash = crypto.createHash('MD5');
   hash.update(publicKeyData);
-  return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1).toUpperCase();
+  return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1);
 }
 
 async function validate_oci_cli_installed_and_configured() {
@@ -53,7 +53,6 @@ async function configure_oci_cli(privateKey: crypto.KeyObject, publicKey: crypto
 
   const ociConfig = `[DEFAULT]
   user=${ociUser}
-  foo=${ociUser}
   fingerprint=${ociFingerprint}
   key_file=${ociPrivateKeyFile}
   tenancy=${ociTenancy}
