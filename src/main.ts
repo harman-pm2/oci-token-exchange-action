@@ -108,7 +108,7 @@ async function run(): Promise<void> {
     const ociUser = core.getInput('oci_user', { required: true });
     const ociTenancy = core.getInput('oci_tenancy', { required: true });
     const ociRegion = core.getInput('oci_region', { required: true });
-    const testToken = core.getInput('test_token', { required: true });
+    const testToken = core.getInput('test_token', { required: false });
 
     // Get github OIDC JWT token
     const idToken = await core.getIDToken();
