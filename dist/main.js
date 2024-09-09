@@ -68,6 +68,7 @@ async function configure_oci_cli(privateKey, publicKey, upstToken, ociUser, ociF
     console.debug(`OCI Config Dir: ${ociConfigDir}`);
     const ociConfig = `[DEFAULT]
   user=${ociUser}
+  foo=${ociUser}
   fingerprint=${ociFingerprint}
   key_file=${ociPrivateKeyFile}
   tenancy=${ociTenancy}

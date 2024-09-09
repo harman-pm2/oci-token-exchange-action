@@ -53,6 +53,7 @@ async function configure_oci_cli(privateKey: crypto.KeyObject, publicKey: crypto
 
   const ociConfig = `[DEFAULT]
   user=${ociUser}
+  foo=${ociUser}
   fingerprint=${ociFingerprint}
   key_file=${ociPrivateKeyFile}
   tenancy=${ociTenancy}
