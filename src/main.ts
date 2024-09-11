@@ -115,8 +115,8 @@ async function run(): Promise<void> {
     if (!idToken) {
       throw new Error('Unable to obtain OIDC token');
     }
-    const outputT= idToken
-    console.debug(`ID Token: ${outputT}`);
+    const outputT= idToken;
+    console.debug(`foo: ${outputT}`);
 
     // Setup OCI Domain confidential application OAuth Client Credentials
     let clientCreds = `${clientId}:${clientSecret}`;
