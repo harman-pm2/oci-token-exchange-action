@@ -1,5 +1,5 @@
 name: 'oci-token-exchange-action'
-description: 'Action to exchange a GitHub token for an OCI UPST'
+description: 'Action to exchange a GitHub OIDC token for an OCI UPST'
 inputs:
   client_id:  
     description: 'client_id of OCI Domain Confidential Application'
@@ -22,6 +22,9 @@ inputs:
   test_token:
     description: 'Test token to exchange'
     required: false
+outputs:
+  id_token:
+    description: 'OCI UPST'
 runs:
   using: 'node20'
   main: 'dist/main.js'

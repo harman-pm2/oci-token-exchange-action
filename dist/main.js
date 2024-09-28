@@ -31,7 +31,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const io = __importStar(require("@actions/io"));
-const exec = __importStar(require("@actions/exec"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const core = __importStar(require("@actions/core"));
@@ -42,24 +41,19 @@ const { publicKey, privateKey } = crypto_1.default.generateKeyPairSync('rsa', {
     modulusLength: 2048,
 });
 // Calculate the fingerprint of the public key
-function calc_fingerprint(publicKey) {
+function calcFingerprint(publicKey) {
     const publicKeyData = publicKey.export({ type: 'spki', format: 'der' });
     const hash = crypto_1.default.createHash('MD5');
     hash.update(publicKeyData);
     return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1);
 }
-async function validate_oci_cli_installed_and_configured() {
-    try {
-        await exec.exec('oci', ['--version']);
-    }
-    catch (error) {
-        throw new Error('OCI CLI is not installed or not configured');
-    }
-}
 // Configure OCI CLI with the UPST token
-async function configure_oci_cli(privateKey, publicKey, upstToken, ociUser, ociFingerprint, ociTenancy, ociRegion) {
+async function configureOciCli(privateKey, publicKey, upstToken, ociUser, ociFingerprint, ociTenancy, ociRegion) {
     // Setup and Initialization OCI CLI Profile
     const home = process.env.HOME || '';
+    if (!home) {
+        throw new Error('HOME environment variable is not defined');
+    }
     const ociConfigDir = path.join(home, '.oci');
     const ociConfigFile = path.join(ociConfigDir, 'config');
     const ociPrivateKeyFile = path.join(home, 'private_key.pem');
@@ -74,18 +68,24 @@ async function configure_oci_cli(privateKey, publicKey, upstToken, ociUser, ociF
   region=${ociRegion}
   security_token_file=${upstTokenFile}
   `;
+    // Ensure the OCI config directory exists
     await io.mkdirP(ociConfigDir);
     if (!fs.existsSync(ociConfigDir)) {
         throw new Error('Unable to create OCI Config folder');
     }
     console.debug(`Created OCI Config folder: ${ociConfig}`);
+    // Write the OCI config file
     fs.writeFileSync(ociConfigFile, ociConfig);
+    // Write the private key to a file
     fs.writeFileSync(ociPrivateKeyFile, privateKey.export({ type: 'pkcs1', format: 'pem' }));
+    // Set the appropriate permissions for the private key file
+    fs.chmodSync(ociPrivateKeyFile, '600');
     fs.writeFileSync(ociPublicKeyFile, publicKey.export({ type: 'spki', format: 'pem' }));
+    // Write the UPST/ Session Token to a file
     fs.writeFileSync(upstTokenFile, upstToken);
 }
 // Exchange JWT token to OCI UPST token
-async function token_exchange_jwt_to_upst(token_exchange_url, client_cred, oci_public_key, subject_token) {
+async function tokenExchangeJwtToUpst(token_exchange_url, client_cred, oci_public_key, subject_token) {
     const headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${client_cred}`
@@ -101,7 +101,7 @@ async function token_exchange_jwt_to_upst(token_exchange_url, client_cred, oci_p
     return response.data;
 }
 // Main function
-async function run() {
+async function main() {
     try {
         // Input Handling
         const clientId = core.getInput('client_id', { required: true });
@@ -121,18 +121,18 @@ async function run() {
         // Setup OCI Domain confidential application OAuth Client Credentials
         let clientCreds = `${clientId}:${clientSecret}`;
         let authStringEncoded = Buffer.from(clientCreds).toString('base64');
-        const ociFingerprint = calc_fingerprint(publicKey);
+        const ociFingerprint = calcFingerprint(publicKey);
         // Get the B64 encoded public key DER
         let publicKeyB64 = publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
         console.debug(`Public Key B64: ${publicKeyB64}`);
         //Exchange JWT to UPST
-        let upstToken = await token_exchange_jwt_to_upst(`${domainBaseURL}/oauth2/v1/token`, authStringEncoded, publicKeyB64, testToken ? testToken : idToken);
+        let upstToken = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, authStringEncoded, publicKeyB64, testToken ? testToken : idToken);
         console.debug(`UPST Token:  ${upstToken.token}`);
-        await configure_oci_cli(privateKey, publicKey, upstToken.token, ociUser, ociFingerprint, ociTenancy, ociRegion);
+        await configureOciCli(privateKey, publicKey, upstToken.token, ociUser, ociFingerprint, ociTenancy, ociRegion);
         // Error Handling
     }
     catch (error) {
         core.setFailed(`Action failed with error: ${error}`);
     }
 }
-run();
+main();
