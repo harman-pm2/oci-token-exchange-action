@@ -116,13 +116,11 @@ async function main(): Promise<void> {
     const testToken: string = core.getInput('test_token', { required: false });
 
     // Get github OIDC JWT token
-    const idToken: string = await core.getIDToken();
+    const idToken: string = await core.getIDToken("https://github.com");
     if (!idToken) {
       throw new Error('Unable to obtain OIDC token');
     }
-    const outputT= idToken;
-    console.debug(`foo: ${outputT}`);
-
+ 
     // Setup OCI Domain confidential application OAuth Client Credentials
     let clientCreds: string = `${clientId}:${clientSecret}`;
     let authStringEncoded: string = Buffer.from(clientCreds).toString('base64');
@@ -133,10 +131,11 @@ async function main(): Promise<void> {
     console.debug(`Public Key B64: ${publicKeyB64}`);
 
     //Exchange JWT to UPST
+   
     let upstToken: UpstTokenResponse = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, authStringEncoded, publicKeyB64, testToken?testToken : idToken);
     console.debug(`UPST Token:  ${upstToken.token}`);
     await configureOciCli(privateKey, publicKey, upstToken.token, ociUser, ociFingerprint, ociTenancy, ociRegion);
-
+  
     // Error Handling
   } catch (error) {
     core.setFailed(`Action failed with error: ${error}`);

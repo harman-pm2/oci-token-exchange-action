@@ -112,12 +112,10 @@ async function main() {
         const ociRegion = core.getInput('oci_region', { required: true });
         const testToken = core.getInput('test_token', { required: false });
         // Get github OIDC JWT token
-        const idToken = await core.getIDToken();
+        const idToken = await core.getIDToken("https://github.com");
         if (!idToken) {
             throw new Error('Unable to obtain OIDC token');
         }
-        const outputT = idToken;
-        console.debug(`foo: ${outputT}`);
         // Setup OCI Domain confidential application OAuth Client Credentials
         let clientCreds = `${clientId}:${clientSecret}`;
         let authStringEncoded = Buffer.from(clientCreds).toString('base64');
