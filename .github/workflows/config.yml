@@ -54,5 +54,5 @@ jobs:
 
     - name: Run OCI CLI Command iam compartment list
       run: |
-        /home/runner/bin/oci --auth security_token iam domain get --domain-id ocid1.domain.oc1..aaaaaaaa4xjiupbz5azczhbvu57zgdfjk3bgejynljjwcmcvonwpm4mz3xcq
+        /home/runner/bin/oci --auth security_token os bucket create --compartment-id ocid1.compartment.oc1..aaaaaaaa4cv4u7oyb6hiqdvlukft5exnxoe5p5rjky5utehcvw33zom5gd3q --name actionTest2 --namespace-name idtvuzux7o75
     
