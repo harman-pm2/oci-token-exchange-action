@@ -30,6 +30,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.main = main;
 const io = __importStar(require("@actions/io"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
@@ -133,4 +134,6 @@ async function main() {
         core.setFailed(`Action failed with error: ${error}`);
     }
 }
-main();
+if (require.main === module) {
+    main();
+}

@@ -48,7 +48,11 @@ jobs:
     - name: List OCI Config
       run: cat ~/.oci/config
 
-    - name: Run OCI CLI Command
+    - name: Run OCI CLI Command iam region list
       run: |
         /home/runner/bin/oci --auth security_token iam region list --all
+
+    - name: Run OCI CLI Command iam compartment list
+      run: |
+        /home/runner/bin/oci --auth security_token iam compartment list --all
     

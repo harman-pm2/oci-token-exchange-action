@@ -104,7 +104,7 @@ async function tokenExchangeJwtToUpst(token_exchange_url: string, client_cred: s
 }
 
 // Main function
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
   try {
     // Input Handling
     const clientId: string = core.getInput('client_id', { required: true });
@@ -142,4 +142,6 @@ async function main(): Promise<void> {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
