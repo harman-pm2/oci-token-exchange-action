@@ -22,8 +22,8 @@ jobs:
         curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash -s -- --accept-all-defaults
       shell: bash
 
-    - name: Install dependencies
-      run: npm install
+    - name: Install Node Modules
+      run: npm CI
 
     - name: Run OCI Token Exchange Action
       uses: gtrevorrow/oci-token-exchange-action@main
@@ -36,23 +36,14 @@ jobs:
         oci_region: ${{ vars.OCI_REGION }}
         # test_token: ${{ secrets.ACCESS_TOKEN_TEST }}
 
-    - name: Debug Print
-      run: |
-        echo "OCI Private Key file:"
-        cat $HOME/private_key.pem
-        echo "OCI Public Key file:"
-        cat $HOME/public_key.pem
-        echo "OCI UPST Session"
-        cat $HOME/session
-
-    - name: List OCI Config
+    - name: Debug - List OCI Config
       run: cat ~/.oci/config
 
-    - name: Run OCI CLI Command iam region list
+    - name: Run OCI CLI Command - iam region list
       run: |
         /home/runner/bin/oci --auth security_token iam region list --all
 
-    - name: Run OCI CLI Command iam compartment list
+    - name: Run OCI CLI Command - os bucket create
       run: |
         /home/runner/bin/oci --auth security_token os bucket create --compartment-id ocid1.compartment.oc1..aaaaaaaa4cv4u7oyb6hiqdvlukft5exnxoe5p5rjky5utehcvw33zom5gd3q --name actionTest2 --namespace-name idtvuzux7o75
     

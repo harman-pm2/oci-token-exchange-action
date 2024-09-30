@@ -41,6 +41,13 @@ const axios_1 = __importDefault(require("axios"));
 const { publicKey, privateKey } = crypto_1.default.generateKeyPairSync('rsa', {
     modulusLength: 2048,
 });
+function encodePublicKeyToBase64() {
+    return publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
+}
+//Calc Domain Authorization Server confidential token exchange app client credential 
+function calcClientCreds(clientId, clientSecret) {
+    return Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+}
 // Calculate the fingerprint of the public key
 function calcFingerprint(publicKey) {
     const publicKeyData = publicKey.export({ type: 'spki', format: 'der' });
@@ -62,7 +69,7 @@ async function configureOciCli(privateKey, publicKey, upstToken, ociUser, ociFin
     const upstTokenFile = path.join(home, 'session');
     console.debug(`OCI Config Dir: ${ociConfigDir}`);
     const ociConfig = `[DEFAULT]
-  user=${ociUser}
+  user='not used'
   fingerprint=${ociFingerprint}
   key_file=${ociPrivateKeyFile}
   tenancy=${ociTenancy}
@@ -118,15 +125,16 @@ async function main() {
             throw new Error('Unable to obtain OIDC token');
         }
         // Setup OCI Domain confidential application OAuth Client Credentials
-        let clientCreds = `${clientId}:${clientSecret}`;
-        let authStringEncoded = Buffer.from(clientCreds).toString('base64');
+        const clientCredential = calcClientCreds(clientId, clientSecret);
+        // Calculate the fingerprint of the public key
         const ociFingerprint = calcFingerprint(publicKey);
         // Get the B64 encoded public key DER
-        let publicKeyB64 = publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
+        let publicKeyB64 = encodePublicKeyToBase64();
         console.debug(`Public Key B64: ${publicKeyB64}`);
         //Exchange JWT to UPST
-        let upstToken = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, authStringEncoded, publicKeyB64, testToken ? testToken : idToken);
+        let upstToken = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, clientCredential, publicKeyB64, testToken ? testToken : idToken);
         console.debug(`UPST Token:  ${upstToken.token}`);
+        //Setup the OCI cli/sdk on the github runner with the UPST token
         await configureOciCli(privateKey, publicKey, upstToken.token, ociUser, ociFingerprint, ociTenancy, ociRegion);
         // Error Handling
     }
