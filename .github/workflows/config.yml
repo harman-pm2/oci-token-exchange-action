@@ -23,7 +23,7 @@ jobs:
       shell: bash
 
     - name: Install Node Modules
-      run: npm CI
+      run: npm ci
 
     - name: Run OCI Token Exchange Action
       uses: gtrevorrow/oci-token-exchange-action@main
