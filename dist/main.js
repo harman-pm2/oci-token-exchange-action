@@ -30,6 +30,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.encodePublicKeyToBase64 = encodePublicKeyToBase64;
+exports.calcClientCreds = calcClientCreds;
+exports.calcFingerprint = calcFingerprint;
+exports.configureOciCli = configureOciCli;
+exports.tokenExchangeJwtToUpst = tokenExchangeJwtToUpst;
 exports.main = main;
 const io = __importStar(require("@actions/io"));
 const fs = __importStar(require("fs"));

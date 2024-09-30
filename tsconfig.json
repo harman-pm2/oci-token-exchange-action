@@ -10,7 +10,7 @@
       "skipLibCheck": true                      // Skip type checking of declaration files
     },
     "include": [
-      "src/**/*.ts"                             // Include all TypeScript files in the src directory
+      "src/**/*.ts","src/__tests__/**/*.ts"                             // Include all TypeScript files in the src directory
     ],
     "exclude": [
       "node_modules",                           // Exclude node_modules directory

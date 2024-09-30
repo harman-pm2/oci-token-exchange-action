@@ -20,17 +20,17 @@ const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
 });
 
-function encodePublicKeyToBase64(): string {
+export function encodePublicKeyToBase64(): string {
   return publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
 }
 
 //Calc Domain Authorization Server confidential token exchange app client credential 
-function calcClientCreds(clientId: string, clientSecret: string): string {
+export function calcClientCreds(clientId: string, clientSecret: string): string {
   return Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 }
 
 // Calculate the fingerprint of the public key
-function calcFingerprint(publicKey: crypto.KeyObject) : string {
+export function calcFingerprint(publicKey: crypto.KeyObject) : string {
   const publicKeyData = publicKey.export({ type: 'spki', format: 'der' });
   const hash = crypto.createHash('MD5');
   hash.update(publicKeyData);
@@ -38,13 +38,13 @@ function calcFingerprint(publicKey: crypto.KeyObject) : string {
 }
 
 // Configure OCI CLI with the UPST token
-async function configureOciCli(privateKey: crypto.KeyObject,
+export async function configureOciCli(privateKey: crypto.KeyObject,
    publicKey: crypto.KeyObject,
    upstToken: string,
    ociUser: string,
    ociFingerprint: string,
    ociTenancy: string,
-   ociRegion: string) {
+   ociRegion: string) :Promise<void> {
   
   // Setup and Initialization OCI CLI Profile
   const home: string = process.env.HOME || '';
@@ -96,7 +96,7 @@ async function configureOciCli(privateKey: crypto.KeyObject,
 }
 
 // Exchange JWT token to OCI UPST token
-async function tokenExchangeJwtToUpst(token_exchange_url: string, client_cred: string, oci_public_key: string, subject_token: string): Promise<any> {
+export async function tokenExchangeJwtToUpst(token_exchange_url: string, client_cred: string, oci_public_key: string, subject_token: string): Promise<any> {
   const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Authorization': `Basic ${client_cred}`
