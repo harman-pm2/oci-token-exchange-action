@@ -149,7 +149,7 @@ export async function main(): Promise<void> {
   
     // Error Handling
   } catch (error) {
-    core.setFailed(`Action failed with error: ${error}`);
+    core.setFailed(`Action failed with error: ${error}`); 
   }
 }
 
