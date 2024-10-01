@@ -36,7 +36,6 @@ jobs:
     - name: Debug - List OCI Config
       run: cat ~/.oci/config
 
-
     - name: Run OCI CLI Command - os bucket create
       run: |
         /home/runner/bin/oci --auth security_token os bucket create --compartment-id ocid1.compartment.oc1..aaaaaaaa4cv4u7oyb6hiqdvlukft5exnxoe5p5rjky5utehcvw33zom5gd3q --name actionDemo1 --namespace-name idtvuzux7o75
