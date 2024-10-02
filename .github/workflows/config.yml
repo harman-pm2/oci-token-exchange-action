@@ -23,7 +23,7 @@ jobs:
       shell: bash
 
     - name: Run OCI Token Exchange Action
-      uses: gtrevorrow/oci-token-exchange-action@main
+      uses: gtrevorrow/oci-token-exchange-action@develop
       with:
         client_id: ${{ secrets.CLIENT_ID }}
         client_secret: ${{ secrets.CLIENT_SECRET }}
