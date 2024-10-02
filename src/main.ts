@@ -41,6 +41,7 @@ function debugPrintJWTToken(token: string) {
   const tokenParts = token.split('.');
   console.debug(`JWT Header: ${Buffer.from(tokenParts[0], 'base64').toString('utf8')}`);
   console.debug(`JWT Payload: ${Buffer.from(tokenParts[1], 'base64').toString('utf8')}`);
+  
 }
 
 // Configure OCI CLI with the UPST token
