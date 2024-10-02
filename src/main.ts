@@ -37,6 +37,12 @@ function calcFingerprint(publicKey: crypto.KeyObject) : string {
   return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1);
 }
 
+function debugPrintJWTToken(token: string) {
+  const tokenParts = token.split('.');
+  console.debug(`JWT Header: ${Buffer.from(tokenParts[0], 'base64').toString('utf8')}`);
+  console.debug(`JWT Payload: ${Buffer.from(tokenParts[1], 'base64').toString('utf8')}`);
+}
+
 // Configure OCI CLI with the UPST token
 async function configureOciCli(privateKey: crypto.KeyObject,
    publicKey: crypto.KeyObject,
@@ -129,6 +135,8 @@ export async function main(): Promise<void> {
     if (!idToken) {
       throw new Error('Unable to obtain OIDC token');
     }
+
+    debugPrintJWTToken(idToken);
  
     // Setup OCI Domain confidential application OAuth Client Credentials
     const clientCredential: string = calcClientCreds(clientId, clientSecret);
