@@ -10,7 +10,7 @@ import * as core from '@actions/core';
 import crypto from 'crypto';
 import axios from 'axios';
 
-// Define the UpstToken interface
+// Define the OCI UPS Token interface
 interface UpstTokenResponse {
   token: string;
 }
@@ -20,16 +20,17 @@ const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
 });
 
+// Encode public key in a format teh OCI token exchange endpoint expects
 function encodePublicKeyToBase64(): string {
   return publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
 }
 
-//Calc Domain Authorization Server confidential token exchange app client credential 
+//Calc OCI Domain Authorization Server confidential token exchange app client credential 
 function calcClientCreds(clientId: string, clientSecret: string): string {
   return Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 }
 
-// Calculate the fingerprint of the public key
+// Calculate the fingerprint of the OCI API public key
 function calcFingerprint(publicKey: crypto.KeyObject) : string {
   const publicKeyData = publicKey.export({ type: 'spki', format: 'der' });
   const hash = crypto.createHash('MD5');
@@ -37,11 +38,20 @@ function calcFingerprint(publicKey: crypto.KeyObject) : string {
   return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1);
 }
 
+// Debug print JWT token to the console
 function debugPrintJWTToken(token: string) {
-  const tokenParts = token.split('.');
-  console.debug(`JWT Header: ${Buffer.from(tokenParts[0], 'base64').toString('utf8')}`);
-  console.debug(`JWT Payload: ${Buffer.from(tokenParts[1], 'base64').toString('utf8')}`);
-  
+  if (core.isDebug()) {
+    const tokenParts = token.split('.');
+    console.debug(`JWT Header: ${Buffer.from(tokenParts[0], 'base64').toString('utf8')}`);
+    console.debug(`JWT Payload: ${Buffer.from(tokenParts[1], 'base64').toString('utf8')}`);
+  }
+}
+
+// Debug print message to the console
+function debugPrint( message: string) {
+  if (core.isDebug()) {
+    console.debug(message);
+  }
 }
 
 // Configure OCI CLI with the UPST token
@@ -53,7 +63,7 @@ async function configureOciCli(privateKey: crypto.KeyObject,
    ociTenancy: string,
    ociRegion: string) {
   
-  // Setup and Initialization OCI CLI Profile
+  // Setup OCI CLI configuration on the GitHub runner
   const home: string = process.env.HOME || '';
   if (!home) {
     throw new Error('HOME environment variable is not defined');
@@ -64,7 +74,7 @@ async function configureOciCli(privateKey: crypto.KeyObject,
   const ociPublicKeyFile: string = path.join(home, 'public_key.pem');
   const upstTokenFile:string = path.join(home, 'session');
 
-  console.debug(`OCI Config Dir: ${ociConfigDir}`);
+  debugPrint(`OCI Config Dir: ${ociConfigDir}`);
 
   const ociConfig: string = `[DEFAULT]
   user='not used'
@@ -81,16 +91,17 @@ async function configureOciCli(privateKey: crypto.KeyObject,
   if (!fs.existsSync(ociConfigDir)) {
     throw new Error('Unable to create OCI Config folder');
   }
-  console.debug(`Created OCI Config folder: ${ociConfig}`);
+  debugPrint(`Created OCI Config folder: ${ociConfig}`);
 
    // Write the OCI config file
   fs.writeFileSync(ociConfigFile, ociConfig);
 
-  // Write the private key to a file
+  // Write the private key to a file at a location refrenced in the OCI ClI config file
   fs.writeFileSync(
     ociPrivateKeyFile,
     privateKey.export({ type: 'pkcs1', format: 'pem' }) as string
   );
+
   // Set the appropriate permissions for the private key file
   fs.chmodSync(ociPrivateKeyFile, '600');
 
@@ -98,11 +109,13 @@ async function configureOciCli(privateKey: crypto.KeyObject,
     ociPublicKeyFile,
     publicKey.export({ type: 'spki', format: 'pem' }) as string
   );
+
   // Write the UPST/ Session Token to a file
   fs.writeFileSync(upstTokenFile, upstToken);
+
 }
 
-// Exchange JWT token to OCI UPST token
+// Encapsulates the REST call to the OCI Domain OAuth token endpoint to exchange a GitHub OIDC ID Token for an OCI UPS token
 async function tokenExchangeJwtToUpst(token_exchange_url: string, client_cred: string, oci_public_key: string, subject_token: string): Promise<any> {
   const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -119,7 +132,7 @@ async function tokenExchangeJwtToUpst(token_exchange_url: string, client_cred: s
   return response.data;
 }
 
-// Main function
+// Main function implements the control logic for the action
 export async function main(): Promise<void> {
   try {
     // Input Handling
@@ -147,11 +160,11 @@ export async function main(): Promise<void> {
 
     // Get the B64 encoded public key DER
     let publicKeyB64: string = encodePublicKeyToBase64();
-    console.debug(`Public Key B64: ${publicKeyB64}`);
+    debugPrint(`Public Key B64: ${publicKeyB64}`);
 
     //Exchange JWT to UPST
     let upstToken: UpstTokenResponse = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, clientCredential, publicKeyB64, testToken?testToken : idToken);
-    console.debug(`UPST Token:  ${upstToken.token}`);
+    debugPrint(`UPST Token:  ${upstToken.token}`);
 
     //Setup the OCI cli/sdk on the github runner with the UPST token
     await configureOciCli(privateKey, publicKey, upstToken.token, ociUser, ociFingerprint, ociTenancy, ociRegion);
