@@ -1,5 +1,8 @@
 name: 'oci-token-exchange-action'
-description: 'Action to exchange a GitHub OIDC token for an OCI UPST'
+description: 'Exchange GitHub OIDC ID Token for OCI Session token for use in the GitHub Actions workflow job'
+branding:
+  color: red
+  icon: cloud
 inputs:
   client_id:  
     description: 'client_id of OCI Domain Confidential Application'
@@ -8,10 +11,7 @@ inputs:
     description: 'client_secret of OCI Domain Confidential Application'
     required: true
   domain_base_url:  
-    description: 'Base URL of OCI Domain'
-    required: true
-  oci_user:  
-    description: 'OCI User'
+    description: 'Base URL of OCI Domain that provides the token exchange endpoint'
     required: true
   oci_tenancy:  
     description: 'OCI Tenancy'
@@ -22,9 +22,6 @@ inputs:
   test_token:
     description: 'Test token to exchange'
     required: false
-outputs:
-  id_token:
-    description: 'OCI UPST'
 runs:
   using: 'node20'
   main: 'dist/main.js'

@@ -42,10 +42,11 @@ function calcFingerprint(publicKey: crypto.KeyObject) : string {
 function debugPrintJWTToken(token: string) {
   if (core.isDebug()) {
     const tokenParts = token.split('.');
-    console.debug(`JWT Header: ${Buffer.from(tokenParts[0], 'base64').toString('utf8')}`);
-    console.debug(`JWT Payload: ${Buffer.from(tokenParts[1], 'base64').toString('utf8')}`);
+    core.debug(`JWT Header: ${Buffer.from(tokenParts[0], 'base64').toString('utf8')}`);
+    core.debug(`JWT Payload: ${Buffer.from(tokenParts[1], 'base64').toString('utf8')}`);
   }
 }
+
 
 // Debug print message to the console
 function debugPrint( message: string) {
@@ -58,7 +59,6 @@ function debugPrint( message: string) {
 async function configureOciCli(privateKey: crypto.KeyObject,
    publicKey: crypto.KeyObject,
    upstToken: string,
-   ociUser: string,
    ociFingerprint: string,
    ociTenancy: string,
    ociRegion: string) {
@@ -91,7 +91,7 @@ async function configureOciCli(privateKey: crypto.KeyObject,
   if (!fs.existsSync(ociConfigDir)) {
     throw new Error('Unable to create OCI Config folder');
   }
-  debugPrint(`Created OCI Config folder: ${ociConfig}`);
+  core.debug(`Created OCI Config folder: ${ociConfig}`);
 
    // Write the OCI config file
   fs.writeFileSync(ociConfigFile, ociConfig);
@@ -139,13 +139,12 @@ export async function main(): Promise<void> {
     const clientId: string = core.getInput('client_id', { required: true });
     const clientSecret: string = core.getInput('client_secret', { required: true });
     const domainBaseURL: string = core.getInput('domain_base_url', { required: true });
-    const ociUser: string = core.getInput('oci_user', { required: true });
     const ociTenancy: string = core.getInput('oci_tenancy', { required: true });
     const ociRegion: string = core.getInput('oci_region', { required: true });
     const testToken: string = core.getInput('test_token', { required: false });
 
     // Get github OIDC JWT token
-    const idToken: string = await core.getIDToken("https://github.com");
+    const idToken: string = await core.getIDToken("https://cloud.oracle.com");
     if (!idToken) {
       throw new Error('Unable to obtain OIDC token');
     }
@@ -160,14 +159,15 @@ export async function main(): Promise<void> {
 
     // Get the B64 encoded public key DER
     let publicKeyB64: string = encodePublicKeyToBase64();
-    debugPrint(`Public Key B64: ${publicKeyB64}`);
+    core.debug(`Public Key B64: ${publicKeyB64}`);
 
     //Exchange JWT to UPST
     let upstToken: UpstTokenResponse = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, clientCredential, publicKeyB64, testToken?testToken : idToken);
-    debugPrint(`UPST Token:  ${upstToken.token}`);
+    core.info(`OCI issued a Session Token`);
 
     //Setup the OCI cli/sdk on the github runner with the UPST token
-    await configureOciCli(privateKey, publicKey, upstToken.token, ociUser, ociFingerprint, ociTenancy, ociRegion);
+    await configureOciCli(privateKey, publicKey, upstToken.token, ociFingerprint, ociTenancy, ociRegion);
+    core.info(`OCI CLI has been configured to use the session token`);
   
     // Error Handling
   } catch (error) {
