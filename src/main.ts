@@ -141,7 +141,6 @@ export async function main(): Promise<void> {
     const domainBaseURL: string = core.getInput('domain_base_url', { required: true });
     const ociTenancy: string = core.getInput('oci_tenancy', { required: true });
     const ociRegion: string = core.getInput('oci_region', { required: true });
-    const testToken: string = core.getInput('test_token', { required: false });
 
     // Get github OIDC JWT token
     const idToken: string = await core.getIDToken("https://cloud.oracle.com");
@@ -162,7 +161,7 @@ export async function main(): Promise<void> {
     core.debug(`Public Key B64: ${publicKeyB64}`);
 
     //Exchange JWT to UPST
-    let upstToken: UpstTokenResponse = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, clientCredential, publicKeyB64, testToken?testToken : idToken);
+    let upstToken: UpstTokenResponse = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, clientCredential, publicKeyB64, idToken);
     core.info(`OCI issued a Session Token`);
 
     //Setup the OCI cli/sdk on the github runner with the UPST token

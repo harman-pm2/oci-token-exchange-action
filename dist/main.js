@@ -30,11 +30,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.encodePublicKeyToBase64 = encodePublicKeyToBase64;
-exports.calcClientCreds = calcClientCreds;
-exports.calcFingerprint = calcFingerprint;
 exports.configureOciCli = configureOciCli;
-exports.tokenExchangeJwtToUpst = tokenExchangeJwtToUpst;
 exports.main = main;
 const io = __importStar(require("@actions/io"));
 const fs = __importStar(require("fs"));
@@ -65,8 +61,8 @@ function calcFingerprint(publicKey) {
 function debugPrintJWTToken(token) {
     if (core.isDebug()) {
         const tokenParts = token.split('.');
-        console.debug(`JWT Header: ${Buffer.from(tokenParts[0], 'base64').toString('utf8')}`);
-        console.debug(`JWT Payload: ${Buffer.from(tokenParts[1], 'base64').toString('utf8')}`);
+        core.debug(`JWT Header: ${Buffer.from(tokenParts[0], 'base64').toString('utf8')}`);
+        core.debug(`JWT Payload: ${Buffer.from(tokenParts[1], 'base64').toString('utf8')}`);
     }
 }
 // Debug print message to the console
@@ -76,7 +72,7 @@ function debugPrint(message) {
     }
 }
 // Configure OCI CLI with the UPST token
-async function configureOciCli(privateKey, publicKey, upstToken, ociUser, ociFingerprint, ociTenancy, ociRegion) {
+async function configureOciCli(privateKey, publicKey, upstToken, ociFingerprint, ociTenancy, ociRegion) {
     // Setup OCI CLI configuration on the GitHub runner
     const home = process.env.HOME || '';
     if (!home) {
@@ -101,7 +97,7 @@ async function configureOciCli(privateKey, publicKey, upstToken, ociUser, ociFin
     if (!fs.existsSync(ociConfigDir)) {
         throw new Error('Unable to create OCI Config folder');
     }
-    debugPrint(`Created OCI Config folder: ${ociConfig}`);
+    core.debug(`Created OCI Config folder: ${ociConfig}`);
     // Write the OCI config file
     fs.writeFileSync(ociConfigFile, ociConfig);
     // Write the private key to a file at a location refrenced in the OCI ClI config file
@@ -135,12 +131,10 @@ async function main() {
         const clientId = core.getInput('client_id', { required: true });
         const clientSecret = core.getInput('client_secret', { required: true });
         const domainBaseURL = core.getInput('domain_base_url', { required: true });
-        const ociUser = core.getInput('oci_user', { required: true });
         const ociTenancy = core.getInput('oci_tenancy', { required: true });
         const ociRegion = core.getInput('oci_region', { required: true });
-        const testToken = core.getInput('test_token', { required: false });
         // Get github OIDC JWT token
-        const idToken = await core.getIDToken("https://github.com");
+        const idToken = await core.getIDToken("https://cloud.oracle.com");
         if (!idToken) {
             throw new Error('Unable to obtain OIDC token');
         }
@@ -151,12 +145,13 @@ async function main() {
         const ociFingerprint = calcFingerprint(publicKey);
         // Get the B64 encoded public key DER
         let publicKeyB64 = encodePublicKeyToBase64();
-        debugPrint(`Public Key B64: ${publicKeyB64}`);
+        core.debug(`Public Key B64: ${publicKeyB64}`);
         //Exchange JWT to UPST
-        let upstToken = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, clientCredential, publicKeyB64, testToken ? testToken : idToken);
-        debugPrint(`UPST Token:  ${upstToken.token}`);
+        let upstToken = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, clientCredential, publicKeyB64, idToken);
+        core.info(`OCI issued a Session Token`);
         //Setup the OCI cli/sdk on the github runner with the UPST token
-        await configureOciCli(privateKey, publicKey, upstToken.token, ociUser, ociFingerprint, ociTenancy, ociRegion);
+        await configureOciCli(privateKey, publicKey, upstToken.token, ociFingerprint, ociTenancy, ociRegion);
+        core.info(`OCI CLI has been configured to use the session token`);
         // Error Handling
     }
     catch (error) {
