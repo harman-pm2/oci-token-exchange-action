@@ -55,6 +55,11 @@ function calcFingerprint(publicKey) {
     hash.update(publicKeyData);
     return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1);
 }
+function debugPrintJWTToken(token) {
+    const tokenParts = token.split('.');
+    console.debug(`JWT Header: ${Buffer.from(tokenParts[0], 'base64').toString('utf8')}`);
+    console.debug(`JWT Payload: ${Buffer.from(tokenParts[1], 'base64').toString('utf8')}`);
+}
 // Configure OCI CLI with the UPST token
 async function configureOciCli(privateKey, publicKey, upstToken, ociUser, ociFingerprint, ociTenancy, ociRegion) {
     // Setup and Initialization OCI CLI Profile
@@ -124,6 +129,7 @@ async function main() {
         if (!idToken) {
             throw new Error('Unable to obtain OIDC token');
         }
+        debugPrintJWTToken(idToken);
         // Setup OCI Domain confidential application OAuth Client Credentials
         const clientCredential = calcClientCreds(clientId, clientSecret);
         // Calculate the fingerprint of the public key
