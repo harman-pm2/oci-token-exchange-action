@@ -128,6 +128,7 @@ async function tokenExchangeJwtToUpst(token_exchange_url: string, client_cred: s
       'subject_token': subject_token,
       'subject_token_type': 'jwt'
   };
+  core.debug('Token Exchange Request Data: ' + JSON.stringify(data));
   const response = await axios.post(token_exchange_url, data, { headers: headers });
   return response.data;
 }
