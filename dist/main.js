@@ -129,8 +129,7 @@ async function tokenExchangeJwtToUpst(token_exchange_url, client_cred, oci_publi
 async function main() {
     try {
         // Input Handling
-        const clientId = core.getInput('client_id', { required: true });
-        const clientSecret = core.getInput('client_secret', { required: true });
+        const oidcClientIdentifier = core.getInput('oidc_client_identifier', { required: true });
         const domainBaseURL = core.getInput('domain_base_url', { required: true });
         const ociTenancy = core.getInput('oci_tenancy', { required: true });
         const ociRegion = core.getInput('oci_region', { required: true });
@@ -140,15 +139,13 @@ async function main() {
             throw new Error('Unable to obtain OIDC token');
         }
         debugPrintJWTToken(idToken);
-        // Setup OCI Domain confidential application OAuth Client Credentials
-        const clientCredential = calcClientCreds(clientId, clientSecret);
         // Calculate the fingerprint of the public key
         const ociFingerprint = calcFingerprint(publicKey);
         // Get the B64 encoded public key DER
         let publicKeyB64 = encodePublicKeyToBase64();
         core.debug(`Public Key B64: ${publicKeyB64}`);
         //Exchange JWT to UPST
-        let upstToken = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, clientCredential, publicKeyB64, idToken);
+        let upstToken = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, Buffer.from(oidcClientIdentifier).toString('base64'), publicKeyB64, idToken);
         core.info(`OCI issued a Session Token`);
         //Setup the OCI cli/sdk on the github runner with the UPST token
         await configureOciCli(privateKey, publicKey, upstToken.token, ociFingerprint, ociTenancy, ociRegion);
