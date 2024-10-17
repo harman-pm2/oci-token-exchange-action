@@ -47,7 +47,6 @@ function debugPrintJWTToken(token: string) {
   }
 }
 
-
 // Debug print message to the console
 function debugPrint( message: string) {
   if (core.isDebug()) {
@@ -137,8 +136,7 @@ async function tokenExchangeJwtToUpst(token_exchange_url: string, client_cred: s
 export async function main(): Promise<void> {
   try {
     // Input Handling
-    const clientId: string = core.getInput('client_id', { required: true });
-    const clientSecret: string = core.getInput('client_secret', { required: true });
+    const oidcClientIdentifier: string = core.getInput('oidc_client_identifier', { required: true });
     const domainBaseURL: string = core.getInput('domain_base_url', { required: true });
     const ociTenancy: string = core.getInput('oci_tenancy', { required: true });
     const ociRegion: string = core.getInput('oci_region', { required: true });
@@ -150,9 +148,6 @@ export async function main(): Promise<void> {
     }
 
     debugPrintJWTToken(idToken);
- 
-    // Setup OCI Domain confidential application OAuth Client Credentials
-    const clientCredential: string = calcClientCreds(clientId, clientSecret);
 
     // Calculate the fingerprint of the public key
     const ociFingerprint: string = calcFingerprint(publicKey);
@@ -162,7 +157,7 @@ export async function main(): Promise<void> {
     core.debug(`Public Key B64: ${publicKeyB64}`);
 
     //Exchange JWT to UPST
-    let upstToken: UpstTokenResponse = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, clientCredential, publicKeyB64, idToken);
+    let upstToken: UpstTokenResponse = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, Buffer.from(oidcClientIdentifier).toString('base64'), publicKeyB64, idToken);
     core.info(`OCI issued a Session Token`);
 
     //Setup the OCI cli/sdk on the github runner with the UPST token

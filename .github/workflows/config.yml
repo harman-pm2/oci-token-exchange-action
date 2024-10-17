@@ -25,12 +25,10 @@ jobs:
     - name: Run OCI Token Exchange Action
       uses: gtrevorrow/oci-token-exchange-action@develop
       with:
-        client_id: ${{ secrets.CLIENT_ID }}
-        client_secret: ${{ secrets.CLIENT_SECRET }}
+        oidc_client_identifier: ${{secrets.OIDC_CLIENT_IDENTIFIER }}
         domain_base_url: ${{ vars.DOMAIN_BASE_URL }}
         oci_tenancy: ${{ vars.OCI_TENANCY }}
         oci_region: ${{ vars.OCI_REGION }} 
-        # test_token: ${{ secrets.ACCESS_TOKEN_TEST }}
 
     - name: Debug - List OCI Config
       run: cat ~/.oci/config
