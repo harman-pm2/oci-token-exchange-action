@@ -29,6 +29,7 @@ jobs:
         domain_base_url: ${{ vars.DOMAIN_BASE_URL }}
         oci_tenancy: ${{ vars.OCI_TENANCY }}
         oci_region: ${{ vars.OCI_REGION }} 
+        retry_count: '3'
 
     - name: Debug - List OCI Config
       run: cat ~/.oci/config

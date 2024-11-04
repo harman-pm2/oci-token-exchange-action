@@ -17,8 +17,12 @@ interface UpstTokenResponse {
 
 // Generate RSA key pair
 const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-    modulusLength: 2048,
+  modulusLength: 2048,
 });
+
+async function delay(count: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, 1000 * count));
+}
 
 // Encode public key in a format teh OCI token exchange endpoint expects
 function encodePublicKeyToBase64(): string {
@@ -31,7 +35,7 @@ function calcClientCreds(clientId: string, clientSecret: string): string {
 }
 
 // Calculate the fingerprint of the OCI API public key
-function calcFingerprint(publicKey: crypto.KeyObject) : string {
+function calcFingerprint(publicKey: crypto.KeyObject): string {
   const publicKeyData = publicKey.export({ type: 'spki', format: 'der' });
   const hash = crypto.createHash('MD5');
   hash.update(publicKeyData);
@@ -48,7 +52,7 @@ function debugPrintJWTToken(token: string) {
 }
 
 // Debug print message to the console
-function debugPrint( message: string) {
+function debugPrint(message: string) {
   if (core.isDebug()) {
     console.debug(message);
   }
@@ -56,12 +60,12 @@ function debugPrint( message: string) {
 
 // Configure OCI CLI with the UPST token
 export async function configureOciCli(privateKey: crypto.KeyObject,
-   publicKey: crypto.KeyObject,
-   upstToken: string,
-   ociFingerprint: string,
-   ociTenancy: string,
-   ociRegion: string) :Promise<void> {
-  
+  publicKey: crypto.KeyObject,
+  upstToken: string,
+  ociFingerprint: string,
+  ociTenancy: string,
+  ociRegion: string): Promise<void> {
+
   // Setup OCI CLI configuration on the GitHub runner
   const home: string = process.env.HOME || '';
   if (!home) {
@@ -71,7 +75,7 @@ export async function configureOciCli(privateKey: crypto.KeyObject,
   const ociConfigFile: string = path.join(ociConfigDir, 'config');
   const ociPrivateKeyFile: string = path.join(home, 'private_key.pem');
   const ociPublicKeyFile: string = path.join(home, 'public_key.pem');
-  const upstTokenFile:string = path.join(home, 'session');
+  const upstTokenFile: string = path.join(home, 'session');
 
   debugPrint(`OCI Config Dir: ${ociConfigDir}`);
 
@@ -86,13 +90,13 @@ export async function configureOciCli(privateKey: crypto.KeyObject,
 
   // Ensure the OCI config directory exists
   await io.mkdirP(ociConfigDir);
-  
+
   if (!fs.existsSync(ociConfigDir)) {
     throw new Error('Unable to create OCI Config folder');
   }
   core.debug(`Created OCI Config folder: ${ociConfig}`);
 
-   // Write the OCI config file
+  // Write the OCI config file
   fs.writeFileSync(ociConfigFile, ociConfig);
 
   // Write the private key to a file at a location refrenced in the OCI ClI config file
@@ -115,63 +119,79 @@ export async function configureOciCli(privateKey: crypto.KeyObject,
 }
 
 // Encapsulates the REST call to the OCI Domain OAuth token endpoint to exchange a GitHub OIDC ID Token for an OCI UPS token
-async function tokenExchangeJwtToUpst(token_exchange_url: string, client_cred: string, oci_public_key: string, subject_token: string): Promise<any> {
+async function tokenExchangeJwtToUpst(tokenExchangeURL: string, clientCred: string, ociPublicKey: string, subjectToken: string, retryCount: number, currentAttempt?: number): Promise<any> {
   const headers = {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${client_cred}`
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Authorization': `Basic ${clientCred}`
   };
   const data = {
-      'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
-      'requested_token_type': 'urn:oci:token-type:oci-upst',
-      'public_key': oci_public_key,
-      'subject_token': subject_token,
-      'subject_token_type': 'jwt'
+    'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
+    'requested_token_type': 'urn:oci:token-type:oci-upst',
+    'public_key': ociPublicKey,
+    'subject_token': subjectToken,
+    'subject_token_type': 'jwt'
   };
   core.debug('Token Exchange Request Data: ' + JSON.stringify(data));
-  const response = await axios.post(token_exchange_url, data, { headers: headers });
-  return response.data;
-}
-
-// Main function implements the control logic for the action
-export async function main(): Promise<void> {
   try {
-    // Input Handling
-    const oidcClientIdentifier: string = core.getInput('oidc_client_identifier', { required: true });
-    const domainBaseURL: string = core.getInput('domain_base_url', { required: true });
-    const ociTenancy: string = core.getInput('oci_tenancy', { required: true });
-    const ociRegion: string = core.getInput('oci_region', { required: true });
-
-    // Get github OIDC JWT token
-    const idToken: string = await core.getIDToken("https://cloud.oracle.com");
-    if (!idToken) {
-      throw new Error('Unable to obtain OIDC token');
-    }
-
-    debugPrintJWTToken(idToken);
-
-    // Calculate the fingerprint of the public key
-    const ociFingerprint: string = calcFingerprint(publicKey);
-
-    // Get the B64 encoded public key DER
-    let publicKeyB64: string = encodePublicKeyToBase64();
-    core.debug(`Public Key B64: ${publicKeyB64}`);
-
-    //Exchange JWT to UPST
-    let upstToken: UpstTokenResponse = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, Buffer.from(oidcClientIdentifier).toString('base64'), publicKeyB64, idToken);
-    core.info(`OCI issued a Session Token`);
-
-    //Setup the OCI cli/sdk on the github runner with the UPST token
-    await configureOciCli(privateKey, publicKey, upstToken.token, ociFingerprint, ociTenancy, ociRegion);
-    core.info(`OCI CLI has been configured to use the session token`);
-  
-    // Error Handling
+    const response = await axios.post(tokenExchangeURL, data, { headers: headers });
+    return response.data;
   } catch (error) {
-    core.setFailed(`Action failed with error: ${error}`); 
+    const attemptCounter = currentAttempt ? currentAttempt : 0;
+    if (retryCount > 0 && retryCount >= attemptCounter ) {
+      core.warning(`Token exchange failed, retrying ... (${retryCount - attemptCounter - 1} retries left)`);
+      await delay(attemptCounter+1)
+      return tokenExchangeJwtToUpst(tokenExchangeURL, clientCred, ociPublicKey, subjectToken, retryCount, attemptCounter + 1);
+    } else {
+      core.error('Failed to exchange JWT for UPST after multiple attempts');
+      if (error instanceof Error) {
+        throw new Error(`Token exchange failed: ${error.message}`);
+      } else {
+        throw new Error('Token exchange failed with an unknown error');
+      }
+    }
   }
 }
 
-if (require.main === module) {
-  main(); 
-}
+  // Main function implements the control logic for the action
+  export async function main(): Promise<void> {
+    try {
+      // Input Handling
+      const oidcClientIdentifier: string = core.getInput('oidc_client_identifier', { required: true });
+      const domainBaseURL: string = core.getInput('domain_base_url', { required: true });
+      const ociTenancy: string = core.getInput('oci_tenancy', { required: true });
+      const ociRegion: string = core.getInput('oci_region', { required: true });
+      const retryCount: number = parseInt(core.getInput('retry_count', { required: false }));
 
+      // Get github OIDC JWT token
+      const idToken: string = await core.getIDToken("https://cloud.oracle.com");
+      if (!idToken) {
+        throw new Error('Unable to obtain OIDC token');
+      }
+
+      debugPrintJWTToken(idToken);
+
+      // Calculate the fingerprint of the public key
+      const ociFingerprint: string = calcFingerprint(publicKey);
+
+      // Get the B64 encoded public key DER
+      let publicKeyB64: string = encodePublicKeyToBase64();
+      core.debug(`Public Key B64: ${publicKeyB64}`);
+
+      //Exchange JWT to UPST
+      let upstToken: UpstTokenResponse = await tokenExchangeJwtToUpst(`${domainBaseURL}/oauth2/v1/token`, Buffer.from(oidcClientIdentifier).toString('base64'), publicKeyB64, idToken, retryCount);
+      core.info(`OCI issued a Session Token`);
+
+      //Setup the OCI cli/sdk on the github runner with the UPST token
+      await configureOciCli(privateKey, publicKey, upstToken.token, ociFingerprint, ociTenancy, ociRegion);
+      core.info(`OCI CLI has been configured to use the session token`);
+
+      // Error Handling
+    } catch (error) {
+      core.setFailed(`Action failed with error: ${error}`);
+    }
+  }
+
+  if (require.main === module) {
+    main();
+  }
 

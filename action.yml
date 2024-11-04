@@ -16,6 +16,10 @@ inputs:
   oci_region:  
     description: 'OCI Region'
     required: true
+  retry_count: 
+    description: 'Number of times to retry the token exchange, default value of 0 means no retries'
+    required: false
+    default: '0'
 runs:
   using: 'node20'
   main: 'dist/main.js'
