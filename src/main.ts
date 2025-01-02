@@ -10,11 +10,6 @@ import * as core from '@actions/core';
 import crypto from 'crypto';
 import axios from 'axios';
 
-// Define the OCI UPS Token interface
-interface UpstTokenResponse {
-  token: string;
-}
-
 // Generate RSA key pair
 const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
   modulusLength: 2048,
@@ -30,7 +25,27 @@ function encodePublicKeyToBase64(): string {
 }
 
 //Calc OCI Domain Authorization Server confidential token exchange app client credential 
+function validateClientCredentials(clientId: string, clientSecret: string): void {
+  if (clientId == null || clientSecret == null) {
+    throw new Error('Client ID and Client Secret must not be null or undefined');
+  }
+  
+  if (clientId.trim() === '' || clientSecret.trim() === '') {
+    throw new Error('Client ID and Client Secret must not be empty');
+  }
+
+  if (clientId.length < 8 || clientSecret.length < 16) {
+    throw new Error('Client ID must be at least 8 characters and Client Secret must be at least 16 characters');
+  }
+
+  const validPattern = /^[a-zA-Z0-9._-]+$/;
+  if (!validPattern.test(clientId) || !validPattern.test(clientSecret)) {
+    throw new Error('Client credentials can only contain alphanumeric characters, dots, underscores and hyphens');
+  }
+}
+
 function calcClientCreds(clientId: string, clientSecret: string): string {
+  validateClientCredentials(clientId, clientSecret);
   return Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 }
 
@@ -54,7 +69,7 @@ function debugPrintJWTToken(token: string) {
 // Debug print message to the console
 function debugPrint(message: string) {
   if (core.isDebug()) {
-    console.debug(message);
+    core.debug(message);  // Replace console.debug with core.debug
   }
 }
 
@@ -65,57 +80,60 @@ export async function configureOciCli(privateKey: crypto.KeyObject,
   ociFingerprint: string,
   ociTenancy: string,
   ociRegion: string): Promise<void> {
+  try {
+    // Setup OCI CLI configuration on the GitHub runner
+    const home: string = process.env.HOME || '';
+    if (!home) {
+      throw new Error('HOME environment variable is not defined');
+    }
+    const ociConfigDir: string = path.join(home, '.oci');
+    const ociConfigFile: string = path.join(ociConfigDir, 'config');
+    const ociPrivateKeyFile: string = path.join(home, 'private_key.pem');
+    const ociPublicKeyFile: string = path.join(home, 'public_key.pem');
+    const upstTokenFile: string = path.join(home, 'session');
 
-  // Setup OCI CLI configuration on the GitHub runner
-  const home: string = process.env.HOME || '';
-  if (!home) {
-    throw new Error('HOME environment variable is not defined');
+    debugPrint(`OCI Config Dir: ${ociConfigDir}`);
+
+    const ociConfig: string = `[DEFAULT]
+    user='not used'
+    fingerprint=${ociFingerprint}
+    key_file=${ociPrivateKeyFile}
+    tenancy=${ociTenancy}
+    region=${ociRegion}
+    security_token_file=${upstTokenFile}
+    `;
+
+    // Ensure the OCI config directory exists
+    await io.mkdirP(ociConfigDir);
+
+    if (!fs.existsSync(ociConfigDir)) {
+      throw new Error('Unable to create OCI Config folder');
+    }
+    core.debug(`Created OCI Config folder: ${ociConfig}`);
+
+    // Write the OCI config file
+    fs.writeFileSync(ociConfigFile, ociConfig);
+
+    // Write the private key to a file at a location refrenced in the OCI ClI config file
+    fs.writeFileSync(
+      ociPrivateKeyFile,
+      privateKey.export({ type: 'pkcs1', format: 'pem' }) as string
+    );
+
+    // Set the appropriate permissions for the private key file
+    fs.chmodSync(ociPrivateKeyFile, '600');
+
+    fs.writeFileSync(
+      ociPublicKeyFile,
+      publicKey.export({ type: 'spki', format: 'pem' }) as string
+    );
+
+    // Write the UPST/ Session Token to a file
+    fs.writeFileSync(upstTokenFile, upstToken);
+  } catch (error) {
+    core.setFailed(`Failed to configure OCI CLI: ${error}`);
+    throw error;
   }
-  const ociConfigDir: string = path.join(home, '.oci');
-  const ociConfigFile: string = path.join(ociConfigDir, 'config');
-  const ociPrivateKeyFile: string = path.join(home, 'private_key.pem');
-  const ociPublicKeyFile: string = path.join(home, 'public_key.pem');
-  const upstTokenFile: string = path.join(home, 'session');
-
-  debugPrint(`OCI Config Dir: ${ociConfigDir}`);
-
-  const ociConfig: string = `[DEFAULT]
-  user='not used'
-  fingerprint=${ociFingerprint}
-  key_file=${ociPrivateKeyFile}
-  tenancy=${ociTenancy}
-  region=${ociRegion}
-  security_token_file=${upstTokenFile}
-  `;
-
-  // Ensure the OCI config directory exists
-  await io.mkdirP(ociConfigDir);
-
-  if (!fs.existsSync(ociConfigDir)) {
-    throw new Error('Unable to create OCI Config folder');
-  }
-  core.debug(`Created OCI Config folder: ${ociConfig}`);
-
-  // Write the OCI config file
-  fs.writeFileSync(ociConfigFile, ociConfig);
-
-  // Write the private key to a file at a location refrenced in the OCI ClI config file
-  fs.writeFileSync(
-    ociPrivateKeyFile,
-    privateKey.export({ type: 'pkcs1', format: 'pem' }) as string
-  );
-
-  // Set the appropriate permissions for the private key file
-  fs.chmodSync(ociPrivateKeyFile, '600');
-
-  fs.writeFileSync(
-    ociPublicKeyFile,
-    publicKey.export({ type: 'spki', format: 'pem' }) as string
-  );
-
-  // Write the UPST/ Session Token to a file
-  fs.writeFileSync(upstTokenFile, upstToken);
-
 }
 
 // Encapsulates the REST call to the OCI Domain OAuth token endpoint to exchange a GitHub OIDC ID Token for an OCI UPS token
