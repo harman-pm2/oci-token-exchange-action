@@ -15,26 +15,24 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4.0.3
       with:
-        node-version: '22.8.0'
+        node-version: '20'
 
     - name: Install OCI CLI
       run: |
         curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash -s -- --accept-all-defaults
+        echo "$HOME/bin" >> $GITHUB_PATH
       shell: bash
 
     - name: Run OCI Token Exchange Action
       uses: gtrevorrow/oci-token-exchange-action@develop
       with:
-        oidc_client_identifier: ${{secrets.OIDC_CLIENT_IDENTIFIER }}
+        oidc_client_identifier: ${{ secrets.OIDC_CLIENT_IDENTIFIER }}
         domain_base_url: ${{ vars.DOMAIN_BASE_URL }}
         oci_tenancy: ${{ vars.OCI_TENANCY }}
-        oci_region: ${{ vars.OCI_REGION }} 
+        oci_region: ${{ vars.OCI_REGION }}
         retry_count: '3'
+        ciPlatform: 'github'
 
-    - name: Debug - List OCI Config
-      run: cat ~/.oci/config
+    - name: Run OCI CLI Command
+      run: oci os bucket create --compartment-id ${{ vars.COMPARTMENT_ID }} --name actionDemo1 --namespace-name ${{ vars.NAMESPACE }}
 
-    - name: Run OCI CLI Command - os bucket create
-      run: |
-        /home/runner/bin/oci --auth security_token os bucket create --compartment-id ocid1.compartment.oc1..aaaaaaaa4cv4u7oyb6hiqdvlukft5exnxoe5p5rjky5utehcvw33zom5gd3q --name actionDemo1 --namespace-name idtvuzux7o75
-    
