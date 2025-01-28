@@ -4,7 +4,7 @@ branding:
   color: red
   icon: cloud
 inputs:
-  ciPlatform:
+  ci_platform:
     description: 'CI platform (github, gitlab, or bitbucket)'
     required: false
     default: 'github'
