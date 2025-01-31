@@ -43,7 +43,7 @@ async function delay(count: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, 1000 * count));
 }
 
-// Encode public key in a format teh OCI token exchange endpoint expects
+// Encode public key in a format the OCI token exchange endpoint expects
 function encodePublicKeyToBase64(): string {
   return publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
 }

@@ -20,8 +20,8 @@ pipelines:
           - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
           - bash install.sh --accept-all-defaults
           - export PATH=$PATH:/root/bin
-          - npm ci
-          - npm run build
+          - npm ci --ignore-scripts
+          - npm run build:cli
           - >
             export PLATFORM=bitbucket &&
             export OIDC_CLIENT_ID=${OIDC_CLIENT_ID} &&
