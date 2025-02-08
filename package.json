@@ -6,7 +6,7 @@
         "name": "Oracle Cloud Infrastructure",
         "email": "gordon.trevorrow@oracle.com"
     },
-    "private": true,
+    "private": false,
     "homepage": "https://github.com/gtrevorrow/oci-token-exchange-action/blob/README.md",
     "repository": {
         "type": "git",
@@ -41,7 +41,8 @@
         "test": "jest",
         "build:cli": "tsc && chmod +x dist/cli.js",
         "package:cli": "npm run build:cli && npm pack",
-        "prepare": "npm run build"
+        "prepare": "npm run build",
+        "release": "semantic-release"
     },
     "files": [
         "dist",
@@ -75,5 +76,8 @@
         "ts-jest": "^29.2.5",
         "typescript": "^5.5.4",
         "typescript-eslint": "^8.1.0"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }
