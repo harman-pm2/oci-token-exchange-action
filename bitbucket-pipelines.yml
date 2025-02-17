@@ -14,7 +14,7 @@ definitions:
 pipelines:
   default:
     - step:
-        name: Deploy to OCI
+        name: Setup OCI CLI 
         oidc: true
         script:
           - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh

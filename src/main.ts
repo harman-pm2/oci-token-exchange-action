@@ -92,7 +92,7 @@ class TokenExchangeError extends Error {
   }
 }
 
-// Refactor token exchange function to use interface
+
 async function tokenExchangeJwtToUpst({
   tokenExchangeURL,
   clientCred,
@@ -133,7 +133,7 @@ async function tokenExchangeJwtToUpst({
   }
 }
 
-// Refactor configureOciCli to use interface
+
 export async function configureOciCli(config: OciConfig): Promise<void> {
   try {
     const home: string = process.env.HOME || '';
@@ -250,7 +250,7 @@ export async function main(): Promise<void> {
     let publicKeyB64: string = encodePublicKeyToBase64();
     platform.logger.debug(`Public Key B64: ${publicKeyB64}`);
 
-    //Exchange JWT to UPST
+    //Exchange platform OIDC token for OCI UPST
     let upstToken: UpstTokenResponse = await tokenExchangeJwtToUpst({
       tokenExchangeURL: `${config.domain_base_url}/oauth2/v1/token`,
       clientCred: Buffer.from(config.oidc_client_identifier).toString('base64'),
@@ -260,7 +260,7 @@ export async function main(): Promise<void> {
     });
     platform.logger.info(`OCI issued a Session Token`);
 
-    //Setup the OCI cli/sdk on the github runner with the UPST token
+    //Setup the OCI cli/sdk on the CI platform runner with the UPST token
     const ociConfig: OciConfig = {
       privateKey,
       publicKey,

@@ -30,19 +30,24 @@ class MockPlatform implements Platform {
 describe('main.ts', () => {
   let mockPlatform: MockPlatform;
   let testConfig: OciConfig;
+  let testKeyPair: crypto.KeyPairSyncResult<string, string>;
 
   beforeEach(() => {
     mockPlatform = new MockPlatform();
-    global.platform = mockPlatform;
+    // Assign the global platform for use in main.ts error paths
+    (global as any).platform = mockPlatform;
 
     // Create test keys
-    const testKeyPair = crypto.generateKeyPairSync('rsa', {
+    testKeyPair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
     });
 
+    // Use key objects directly instead of exported strings
     testConfig = {
-      privateKey: testKeyPair.privateKey,
-      publicKey: testKeyPair.publicKey,
+      privateKey: crypto.createPrivateKey(testKeyPair.privateKey),
+      publicKey: crypto.createPublicKey(testKeyPair.publicKey),
       upstToken: 'test-token',
       ociFingerprint: 'test-fingerprint',
       ociTenancy: 'test-tenancy',
@@ -54,9 +59,9 @@ describe('main.ts', () => {
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    jest.resetModules();
     delete process.env.HOME;
-    delete global.platform;
+    delete (global as any).platform;
   });
 
   describe('configureOciCli', () => {
@@ -68,7 +73,7 @@ describe('main.ts', () => {
       expect(fs.chmod).toHaveBeenCalledWith(expect.stringContaining('private_key.pem'), '600');
     });
 
-    it('should handle missing HOME environment', async () => {
+    it('should throw error if HOME is undefined', async () => {
       delete process.env.HOME;
       await expect(configureOciCli(testConfig)).rejects.toThrow('HOME environment variable is not defined');
     });
@@ -82,6 +87,19 @@ describe('main.ts', () => {
     it('should handle file write errors', async () => {
       (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mockRejectedValueOnce(new Error('Write failed'));
       await expect(configureOciCli(testConfig)).rejects.toThrow('Failed to write OCI configuration files');
+    });
+
+    it('should write correct OCI config content', async () => {
+      await configureOciCli(testConfig);
+      // Verify that the config file (first fs.writeFile call) contains expected snippets.
+      const fsWriteFileMock = fs.writeFile as jest.MockedFunction<typeof fs.writeFile>;
+      const configCall = fsWriteFileMock.mock.calls.find(call => typeof call[0] === 'string' && call[0].includes('config'));
+      if (!configCall) {
+        throw new Error('Config write call not found in mock calls');
+      }
+      expect(configCall[1]).toContain(`fingerprint=${testConfig.ociFingerprint}`);
+      expect(configCall[1]).toContain(`tenancy=${testConfig.ociTenancy}`);
+      expect(configCall[1]).toContain(`region=${testConfig.ociRegion}`);
     });
   });
 });

@@ -91,6 +91,38 @@ pipelines:
 3. Exchanges the JWT for an OCI UPST token
 4. Configures the OCI CLI with the obtained credentials
 
+## Semantic Versioning
+
+This project follows semantic versioning powered by [semantic-release](https://github.com/semantic-release/semantic-release). Version numbers are automatically determined from commit messages following the [Conventional Commits](https://www.conventionalcommits.org/) specification.
+
+### Version Updates
+
+The version number (MAJOR.MINOR.PATCH) is automatically incremented based on commit types:
+
+- **MAJOR** version: Breaking changes
+  - Triggered by commits containing `BREAKING CHANGE:` in body or footer
+  - Example: `feat!: remove support for Node 16`
+
+- **MINOR** version: New features
+  - Triggered by `feat` type commits
+  - Example: `feat(auth): add support for GitLab CI`
+
+- **PATCH** version: Bug fixes and improvements
+  - Triggered by `fix`, `perf`, or `refactor` type commits
+  - Example: `fix(core): resolve token refresh issue`
+
+### Other Commit Types
+
+The following commit types will not trigger a version update:
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, semicolons, etc)
+- `test`: Adding or modifying tests
+- `chore`: Maintenance tasks
+- `build`: Build system changes
+- `ci`: CI configuration changes
+
+### Examples
+
 ## License
 
 This action is licensed under the [Universal Permissive License v1.0 (UPL-1.0)](LICENSE.txt).
