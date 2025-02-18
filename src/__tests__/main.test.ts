@@ -34,9 +34,6 @@ describe('main.ts', () => {
 
   beforeEach(() => {
     mockPlatform = new MockPlatform();
-    // Assign the global platform for use in main.ts error paths
-    (global as any).platform = mockPlatform;
-
     // Create test keys
     testKeyPair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
@@ -56,17 +53,18 @@ describe('main.ts', () => {
 
     process.env.HOME = '/mock/home';
     jest.clearAllMocks();
+    // Cast fs.access using jest.MockedFunction to conform with the correct type arguments.
+    (fs.access as jest.MockedFunction<typeof fs.access>).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
     jest.resetModules();
     delete process.env.HOME;
-    delete (global as any).platform;
   });
 
   describe('configureOciCli', () => {
     it('should create OCI configuration successfully', async () => {
-      await configureOciCli(testConfig);
+      await configureOciCli(mockPlatform, testConfig);
 
       expect(fs.mkdir).toHaveBeenCalledWith(expect.stringContaining('.oci'), { recursive: true });
       expect(fs.writeFile).toHaveBeenCalledTimes(4);
@@ -75,22 +73,22 @@ describe('main.ts', () => {
 
     it('should throw error if HOME is undefined', async () => {
       delete process.env.HOME;
-      await expect(configureOciCli(testConfig)).rejects.toThrow('HOME environment variable is not defined');
+      await expect(configureOciCli(mockPlatform, testConfig)).rejects.toThrow('HOME environment variable is not defined');
     });
 
     it('should handle directory creation failure', async () => {
       const mkdirMock = fs.mkdir as jest.MockedFunction<typeof fs.mkdir>;
       mkdirMock.mockRejectedValueOnce(new Error('Permission denied'));
-      await expect(configureOciCli(testConfig)).rejects.toThrow('Unable to create OCI Config folder');
+      await expect(configureOciCli(mockPlatform, testConfig)).rejects.toThrow('Unable to create OCI Config folder');
     });
 
     it('should handle file write errors', async () => {
       (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mockRejectedValueOnce(new Error('Write failed'));
-      await expect(configureOciCli(testConfig)).rejects.toThrow('Failed to write OCI configuration files');
+      await expect(configureOciCli(mockPlatform, testConfig)).rejects.toThrow('Failed to write OCI configuration files');
     });
 
     it('should write correct OCI config content', async () => {
-      await configureOciCli(testConfig);
+      await configureOciCli(mockPlatform, testConfig);
       // Verify that the config file (first fs.writeFile call) contains expected snippets.
       const fsWriteFileMock = fs.writeFile as jest.MockedFunction<typeof fs.writeFile>;
       const configCall = fsWriteFileMock.mock.calls.find(call => typeof call[0] === 'string' && call[0].includes('config'));

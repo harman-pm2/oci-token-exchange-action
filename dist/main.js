@@ -87,7 +87,8 @@ class TokenExchangeError extends Error {
     }
 }
 exports.TokenExchangeError = TokenExchangeError;
-async function tokenExchangeJwtToUpst({ tokenExchangeURL, clientCred, ociPublicKey, subjectToken, retryCount, currentAttempt = 0 }) {
+// Update tokenExchangeJwtToUpst to accept platform as first parameter
+async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, ociPublicKey, subjectToken, retryCount, currentAttempt = 0 }) {
     const headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${clientCred}`
@@ -101,7 +102,7 @@ async function tokenExchangeJwtToUpst({ tokenExchangeURL, clientCred, ociPublicK
     };
     platform.logger.debug('Token Exchange Request Data: ' + JSON.stringify(data));
     try {
-        const response = await axios_1.default.post(tokenExchangeURL, data, { headers: headers });
+        const response = await axios_1.default.post(tokenExchangeURL, data, { headers });
         return response.data;
     }
     catch (error) {
@@ -109,7 +110,14 @@ async function tokenExchangeJwtToUpst({ tokenExchangeURL, clientCred, ociPublicK
         if (retryCount > 0 && retryCount >= attemptCounter) {
             platform.logger.warning(`Token exchange failed, retrying ... (${retryCount - attemptCounter - 1} retries left)`);
             await delay(attemptCounter + 1);
-            return tokenExchangeJwtToUpst({ tokenExchangeURL, clientCred, ociPublicKey, subjectToken, retryCount, currentAttempt: attemptCounter + 1 });
+            return tokenExchangeJwtToUpst(platform, {
+                tokenExchangeURL,
+                clientCred,
+                ociPublicKey,
+                subjectToken,
+                retryCount,
+                currentAttempt: attemptCounter + 1
+            });
         }
         else {
             platform.logger.error('Failed to exchange JWT for UPST after multiple attempts');
@@ -122,7 +130,8 @@ async function tokenExchangeJwtToUpst({ tokenExchangeURL, clientCred, ociPublicK
         }
     }
 }
-async function configureOciCli(config) {
+// Update configureOciCli to accept platform as first parameter
+async function configureOciCli(platform, config) {
     try {
         const home = process.env.HOME || '';
         if (!home) {
@@ -133,7 +142,7 @@ async function configureOciCli(config) {
         const ociPrivateKeyFile = path.join(home, 'private_key.pem');
         const ociPublicKeyFile = path.join(home, 'public_key.pem');
         const upstTokenFile = path.join(home, 'session');
-        debugPrint(`OCI Config Dir: ${ociConfigDir}`);
+        debugPrint(platform, `OCI Config Dir: ${ociConfigDir}`);
         const ociConfig = `[DEFAULT]
     user='not used'
     fingerprint=${config.ociFingerprint}
@@ -142,7 +151,6 @@ async function configureOciCli(config) {
     region=${config.ociRegion}
     security_token_file=${upstTokenFile}
     `;
-        // Create directory and check if it exists in one operation
         try {
             await fs.mkdir(ociConfigDir, { recursive: true });
         }
@@ -150,12 +158,15 @@ async function configureOciCli(config) {
             throw new Error('Unable to create OCI Config folder');
         }
         platform.logger.debug(`Created OCI Config folder: ${ociConfig}`);
-        // Check if files exist before writing
         try {
-            await fs.access(ociConfigFile).then(() => {
+            // Use await/try-catch for fs.access instead of chaining then/catch
+            try {
+                await fs.access(ociConfigFile);
                 platform.logger.warning(`Overwriting existing config file at ${ociConfigFile}`);
-            }).catch(() => { });
-            // Write all files using promises
+            }
+            catch (e) {
+                // File does not exist, proceed silently
+            }
             await Promise.all([
                 fs.writeFile(ociConfigFile, ociConfig),
                 fs.writeFile(ociPrivateKeyFile, config.privateKey.export({ type: 'pkcs1', format: 'pem' })).then(() => fs.chmod(ociPrivateKeyFile, '600')),
@@ -172,27 +183,28 @@ async function configureOciCli(config) {
         throw error;
     }
 }
-let platform;
-function debugPrintJWTToken(token) {
+// Update debugPrintJWTToken to accept platform as parameter
+function debugPrintJWTToken(platform, token) {
     if (platform.isDebug()) {
         const tokenParts = token.split('.');
         platform.logger.debug(`JWT Header: ${Buffer.from(tokenParts[0], 'base64').toString('utf8')}`);
         platform.logger.debug(`JWT Payload: ${Buffer.from(tokenParts[1], 'base64').toString('utf8')}`);
     }
 }
-function debugPrint(message) {
+// Refactored debugPrint accepting the platform instance
+function debugPrint(platform, message) {
     if (platform.isDebug()) {
         platform.logger.debug(message);
     }
 }
-// Main function implements the control logic for the action
+// Main function now creates a local platform instance and passes it to subfunctions
 async function main() {
     try {
         const platformType = process.env.PLATFORM || 'github';
         if (!PLATFORM_CONFIGS[platformType]) {
             throw new Error(`Unsupported platform: ${platformType}`);
         }
-        platform = createPlatform(platformType);
+        const platform = createPlatform(platformType);
         // Use typed object for config
         const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region']
             .reduce((acc, input) => ({
@@ -205,14 +217,14 @@ async function main() {
         }
         const idToken = await platform.getOIDCToken(PLATFORM_CONFIGS[platformType].audience);
         platform.logger.debug(`Token obtained from ${platformType}`);
-        debugPrintJWTToken(idToken);
+        debugPrintJWTToken(platform, idToken);
         // Calculate the fingerprint of the public key
         const ociFingerprint = calcFingerprint(publicKey);
         // Get the B64 encoded public key DER
         let publicKeyB64 = encodePublicKeyToBase64();
         platform.logger.debug(`Public Key B64: ${publicKeyB64}`);
         //Exchange platform OIDC token for OCI UPST
-        let upstToken = await tokenExchangeJwtToUpst({
+        let upstToken = await tokenExchangeJwtToUpst(platform, {
             tokenExchangeURL: `${config.domain_base_url}/oauth2/v1/token`,
             clientCred: Buffer.from(config.oidc_client_identifier).toString('base64'),
             ociPublicKey: publicKeyB64,
@@ -229,7 +241,7 @@ async function main() {
             ociTenancy: config.oci_tenancy,
             ociRegion: config.oci_region
         };
-        await configureOciCli(ociConfig);
+        await configureOciCli(platform, ociConfig);
         platform.logger.info(`OCI CLI has been configured to use the session token`);
         // Add success output
         platform.setOutput('configured', 'true');

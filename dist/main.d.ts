@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { Platform } from './platforms/types';
 interface TokenExchangeConfig {
     tokenExchangeURL: string;
     clientCred: string;
@@ -19,6 +20,6 @@ declare class TokenExchangeError extends Error {
     readonly cause?: unknown;
     constructor(message: string, cause?: unknown);
 }
-export declare function configureOciCli(config: OciConfig): Promise<void>;
+export declare function configureOciCli(platform: Platform, config: OciConfig): Promise<void>;
 export declare function main(): Promise<void>;
 export { TokenExchangeError, TokenExchangeConfig, OciConfig };
