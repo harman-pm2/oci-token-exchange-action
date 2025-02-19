@@ -230,13 +230,14 @@ function debugPrint(platform: Platform, message: string) {
 
 // Main function now creates a local platform instance and passes it to subfunctions
 export async function main(): Promise<void> {
-  try {
-    const platformType = process.env.PLATFORM || 'github';
+  let platform: Platform ; // Initialize with default platform
+  const platformType = process.env.PLATFORM || 'github';
     if (!PLATFORM_CONFIGS[platformType]) {
       throw new Error(`Unsupported platform: ${platformType}`);
     }
-    const platform = createPlatform(platformType);
-    
+    platform = createPlatform(platformType);
+  try {
+     
     // Use typed object for config
     const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region']
       .reduce<Partial<ConfigInputs>>((acc, input) => ({
