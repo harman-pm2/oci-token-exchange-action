@@ -184,15 +184,26 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
         // File does not exist, proceed silently
       }
       
+      // Add debug logging for key exports
+      const privateKeyPem = config.privateKey.export({ type: 'pkcs1', format: 'pem' });
+      const publicKeyPem = config.publicKey.export({ type: 'spki', format: 'pem' });
+      
+      platform.logger.debug(`Private key export type: ${typeof privateKeyPem}`);
+      platform.logger.debug(`Public key export type: ${typeof publicKeyPem}`);
+      
+      if (!privateKeyPem || !publicKeyPem) {
+        throw new Error('Key export failed - received undefined');
+      }
+
       await Promise.all([
         fs.writeFile(ociConfigFile, ociConfig),
         fs.writeFile(
           ociPrivateKeyFile,
-          config.privateKey.export({ type: 'pkcs1', format: 'pem' }) as string
+          privateKeyPem
         ).then(() => fs.chmod(ociPrivateKeyFile, '600')),
         fs.writeFile(
           ociPublicKeyFile,
-          config.publicKey.export({ type: 'spki', format: 'pem' }) as string
+          publicKeyPem
         ),
         fs.writeFile(upstTokenFile, config.upstToken)
       ]);
