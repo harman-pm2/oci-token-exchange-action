@@ -15,13 +15,23 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -172,13 +182,22 @@ async function configureOciCli(platform, config) {
             const publicKeyPem = config.publicKey.export({ type: 'spki', format: 'pem' });
             platform.logger.debug(`Private key export type: ${typeof privateKeyPem}`);
             platform.logger.debug(`Public key export type: ${typeof publicKeyPem}`);
-            if (!privateKeyPem || !publicKeyPem) {
-                throw new Error('Key export failed - received undefined');
+            platform.logger.debug(`Private key length: ${(privateKeyPem === null || privateKeyPem === void 0 ? void 0 : privateKeyPem.length) || 'undefined'}`);
+            platform.logger.debug(`Public key length: ${(publicKeyPem === null || publicKeyPem === void 0 ? void 0 : publicKeyPem.length) || 'undefined'}`);
+            if (typeof privateKeyPem !== 'string' || typeof publicKeyPem !== 'string') {
+                throw new Error('Key export failed - invalid type, expected string');
             }
+            if (!privateKeyPem || !publicKeyPem) {
+                throw new Error('Key export failed - received empty value');
+            }
+            // Convert KeyObject exports to Buffer if needed
+            const privateKeyData = Buffer.isBuffer(privateKeyPem) ? privateKeyPem : Buffer.from(privateKeyPem);
+            const publicKeyData = Buffer.isBuffer(publicKeyPem) ? publicKeyPem : Buffer.from(publicKeyPem);
             await Promise.all([
                 fs.writeFile(ociConfigFile, ociConfig),
-                fs.writeFile(ociPrivateKeyFile, privateKeyPem).then(() => fs.chmod(ociPrivateKeyFile, '600')),
-                fs.writeFile(ociPublicKeyFile, publicKeyPem),
+                fs.writeFile(ociPrivateKeyFile, privateKeyData)
+                    .then(() => fs.chmod(ociPrivateKeyFile, '600')),
+                fs.writeFile(ociPublicKeyFile, publicKeyData),
                 fs.writeFile(upstTokenFile, config.upstToken)
             ]);
         }

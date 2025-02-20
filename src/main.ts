@@ -190,21 +190,26 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
       
       platform.logger.debug(`Private key export type: ${typeof privateKeyPem}`);
       platform.logger.debug(`Public key export type: ${typeof publicKeyPem}`);
+      platform.logger.debug(`Private key length: ${privateKeyPem?.length || 'undefined'}`);
+      platform.logger.debug(`Public key length: ${publicKeyPem?.length || 'undefined'}`);
       
-      if (!privateKeyPem || !publicKeyPem) {
-        throw new Error('Key export failed - received undefined');
+      if (typeof privateKeyPem !== 'string' || typeof publicKeyPem !== 'string') {
+        throw new Error('Key export failed - invalid type, expected string');
       }
+
+      if (!privateKeyPem || !publicKeyPem) {
+        throw new Error('Key export failed - received empty value');
+      }
+
+      // Convert KeyObject exports to Buffer if needed
+      const privateKeyData = Buffer.isBuffer(privateKeyPem) ? privateKeyPem : Buffer.from(privateKeyPem);
+      const publicKeyData = Buffer.isBuffer(publicKeyPem) ? publicKeyPem : Buffer.from(publicKeyPem);
 
       await Promise.all([
         fs.writeFile(ociConfigFile, ociConfig),
-        fs.writeFile(
-          ociPrivateKeyFile,
-          privateKeyPem
-        ).then(() => fs.chmod(ociPrivateKeyFile, '600')),
-        fs.writeFile(
-          ociPublicKeyFile,
-          publicKeyPem
-        ),
+        fs.writeFile(ociPrivateKeyFile, privateKeyData)
+          .then(() => fs.chmod(ociPrivateKeyFile, '600')),
+        fs.writeFile(ociPublicKeyFile, publicKeyData),
         fs.writeFile(upstTokenFile, config.upstToken)
       ]);
     } catch (error) {
