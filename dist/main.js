@@ -177,12 +177,30 @@ async function configureOciCli(platform, config) {
             catch (e) {
                 // File does not exist, proceed silently
             }
+            // Export and validate keys first
+            const privateKeyPem = config.privateKey.export({ type: 'pkcs1', format: 'pem' });
+            const publicKeyPem = config.publicKey.export({ type: 'spki', format: 'pem' });
+            if (!privateKeyPem || typeof privateKeyPem !== 'string') {
+                throw new Error('Private key export failed or invalid type');
+            }
+            if (!publicKeyPem || typeof publicKeyPem !== 'string') {
+                throw new Error('Public key export failed or invalid type');
+            }
+            if (!config.upstToken || typeof config.upstToken !== 'string') {
+                throw new Error('Session token is undefined or invalid type');
+            }
+            if (!ociConfig || typeof ociConfig !== 'string') {
+                throw new Error('OCI config is undefined or invalid type');
+            }
+            platform.logger.debug('Validated all file contents before writing');
             await Promise.all([
                 fs.writeFile(ociConfigFile, ociConfig)
                     .then(() => platform.logger.debug(`Successfully wrote OCI config to ${ociConfigFile}`)),
-                fs.writeFile(ociPrivateKeyFile, config.privateKey.export({ type: 'pkcs1', format: 'pem' })).then(() => fs.chmod(ociPrivateKeyFile, '600'))
+                fs.writeFile(ociPrivateKeyFile, privateKeyPem)
+                    .then(() => fs.chmod(ociPrivateKeyFile, '600'))
                     .then(() => platform.logger.debug(`Successfully wrote private key to ${ociPrivateKeyFile} with permissions 600`)),
-                fs.writeFile(ociPublicKeyFile, config.publicKey.export({ type: 'spki', format: 'pem' })).then(() => platform.logger.debug(`Successfully wrote public key to ${ociPublicKeyFile}`)),
+                fs.writeFile(ociPublicKeyFile, publicKeyPem)
+                    .then(() => platform.logger.debug(`Successfully wrote public key to ${ociPublicKeyFile}`)),
                 fs.writeFile(upstTokenFile, config.upstToken)
                     .then(() => platform.logger.debug(`Successfully wrote session token to ${upstTokenFile}`))
             ]);
