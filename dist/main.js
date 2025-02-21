@@ -263,7 +263,7 @@ async function main() {
             subjectToken: idToken,
             retryCount
         });
-        platform.logger.info(`OCI issued a Session Token`);
+        platform.logger.info(`OCI issued a Session Token : ${upstToken}`);
         //Setup the OCI cli/sdk on the CI platform runner with the UPST token
         const ociConfig = {
             privateKey,
