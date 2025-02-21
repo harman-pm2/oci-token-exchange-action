@@ -269,7 +269,7 @@ async function main() {
         const ociConfig = {
             privateKey,
             publicKey,
-            upstToken: upstToken.access_token,
+            upstToken: upstToken.token,
             ociFingerprint,
             ociTenancy: config.oci_tenancy,
             ociRegion: config.oci_region

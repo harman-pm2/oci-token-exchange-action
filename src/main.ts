@@ -226,9 +226,7 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
 
 // Encapsulates the REST call to the OCI Domain OAuth token endpoint to exchange a GitHub OIDC ID Token for an OCI UPS token
 interface UpstTokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
+  token: string;
 }
 
 // Update debugPrintJWTToken to accept platform as parameter
@@ -295,7 +293,7 @@ export async function main(): Promise<void> {
     const ociConfig: OciConfig = {
       privateKey,
       publicKey,
-      upstToken: upstToken.access_token,
+      upstToken: upstToken.token,
       ociFingerprint,
       ociTenancy: config.oci_tenancy,
       ociRegion: config.oci_region
