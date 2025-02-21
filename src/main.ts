@@ -173,7 +173,7 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
       throw new Error('Unable to create OCI Config folder');
     }
 
-    platform.logger.debug(`Created OCI Config folder: ${ociConfig}`);
+    platform.logger.debug(`Created OCI Config : ${ociConfig}`);
 
     try {
       // Use await/try-catch for fs.access instead of chaining then/catch
@@ -184,33 +184,20 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
         // File does not exist, proceed silently
       }
       
-      // Add debug logging for key exports
-      const privateKeyPem = config.privateKey.export({ type: 'pkcs1', format: 'pem' });
-      const publicKeyPem = config.publicKey.export({ type: 'spki', format: 'pem' });
-      
-      platform.logger.debug(`Private key export type: ${typeof privateKeyPem}`);
-      platform.logger.debug(`Public key export type: ${typeof publicKeyPem}`);
-      platform.logger.debug(`Private key length: ${privateKeyPem?.length || 'undefined'}`);
-      platform.logger.debug(`Public key length: ${publicKeyPem?.length || 'undefined'}`);
-      
-      if (typeof privateKeyPem !== 'string' || typeof publicKeyPem !== 'string') {
-        throw new Error('Key export failed - invalid type, expected string');
-      }
-
-      if (!privateKeyPem || !publicKeyPem) {
-        throw new Error('Key export failed - received empty value');
-      }
-
-      // Convert KeyObject exports to Buffer if needed
-      const privateKeyData = Buffer.isBuffer(privateKeyPem) ? privateKeyPem : Buffer.from(privateKeyPem);
-      const publicKeyData = Buffer.isBuffer(publicKeyPem) ? publicKeyPem : Buffer.from(publicKeyPem);
-
       await Promise.all([
-        fs.writeFile(ociConfigFile, ociConfig),
-        fs.writeFile(ociPrivateKeyFile, privateKeyData)
-          .then(() => fs.chmod(ociPrivateKeyFile, '600')),
-        fs.writeFile(ociPublicKeyFile, publicKeyData),
+        fs.writeFile(ociConfigFile, ociConfig)
+          .then(() => platform.logger.debug(`Successfully wrote OCI config to ${ociConfigFile}`)),
+        fs.writeFile(
+          ociPrivateKeyFile,
+          config.privateKey.export({ type: 'pkcs1', format: 'pem' }) as string
+        ).then(() => fs.chmod(ociPrivateKeyFile, '600'))
+          .then(() => platform.logger.debug(`Successfully wrote private key to ${ociPrivateKeyFile} with permissions 600`)),
+        fs.writeFile(
+          ociPublicKeyFile,
+          config.publicKey.export({ type: 'spki', format: 'pem' }) as string
+        ).then(() => platform.logger.debug(`Successfully wrote public key to ${ociPublicKeyFile}`)),
         fs.writeFile(upstTokenFile, config.upstToken)
+          .then(() => platform.logger.debug(`Successfully wrote session token to ${upstTokenFile}`))
       ]);
     } catch (error) {
       throw new TokenExchangeError('Failed to write OCI configuration files', error);
@@ -254,6 +241,7 @@ export async function main(): Promise<void> {
     platform = createPlatform(platformType);
   try {
      
+    // Use typed object for config
     const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region']
       .reduce<Partial<ConfigInputs>>((acc, input) => ({
         ...acc,
