@@ -113,6 +113,7 @@ async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, 
     platform.logger.debug('Token Exchange Request Data: ' + JSON.stringify(data));
     try {
         const response = await axios_1.default.post(tokenExchangeURL, data, { headers });
+        platform.logger.debug('Token Exchange Response: ' + JSON.stringify(response.data));
         return response.data;
     }
     catch (error) {
@@ -263,7 +264,7 @@ async function main() {
             subjectToken: idToken,
             retryCount
         });
-        platform.logger.info(`OCI issued a Session Token : ${upstToken}`);
+        platform.logger.info(`OCI issued a Session Token `);
         //Setup the OCI cli/sdk on the CI platform runner with the UPST token
         const ociConfig = {
             privateKey,

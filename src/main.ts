@@ -118,6 +118,7 @@ async function tokenExchangeJwtToUpst(
   platform.logger.debug('Token Exchange Request Data: ' + JSON.stringify(data));
   try {
     const response = await axios.post(tokenExchangeURL, data, { headers });
+    platform.logger.debug('Token Exchange Response: ' + JSON.stringify(response.data));
     return response.data;
   } catch (error) {
     const attemptCounter = currentAttempt ? currentAttempt : 0;
@@ -289,8 +290,7 @@ export async function main(): Promise<void> {
       retryCount
     });
     platform.logger.info(`OCI issued a Session Token `);
-    platform.logger.debug(`OCI Session Token: ${upstToken}`);
-
+   
     //Setup the OCI cli/sdk on the CI platform runner with the UPST token
     const ociConfig: OciConfig = {
       privateKey,
