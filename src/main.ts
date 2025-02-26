@@ -10,6 +10,33 @@ import { Platform, PlatformConfig } from './platforms/types';
 import { GitHubPlatform } from './platforms/github';
 import { CLIPlatform } from './platforms/cli';
 
+// Add interfaces for better type safety
+interface TokenExchangeConfig {
+  tokenExchangeURL: string;
+  clientCred: string;
+  ociPublicKey: string;
+  subjectToken: string;
+  retryCount: number;
+  currentAttempt?: number;
+}
+
+interface OciConfig {
+  privateKey: crypto.KeyObject;
+  publicKey: crypto.KeyObject;
+  upstToken: string;
+  ociFingerprint: string;
+  ociTenancy: string;
+  ociRegion: string;
+}
+
+// Add type for config object
+interface ConfigInputs {
+  oidc_client_identifier: string;
+  domain_base_url: string;
+  oci_tenancy: string;
+  oci_region: string;
+}
+
 const PLATFORM_CONFIGS: Record<string, PlatformConfig> = {
   github: {
     audience: 'https://cloud.oracle.com'
@@ -48,7 +75,6 @@ function encodePublicKeyToBase64(): string {
   return publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
 }
 
-
 // Calculate the fingerprint of the OCI API public key
 function calcFingerprint(publicKey: crypto.KeyObject): string {
   const publicKeyData = publicKey.export({ type: 'spki', format: 'der' });
@@ -57,32 +83,6 @@ function calcFingerprint(publicKey: crypto.KeyObject): string {
   return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1);
 }
 
-// Add interfaces for better type safety
-interface TokenExchangeConfig {
-  tokenExchangeURL: string;
-  clientCred: string;
-  ociPublicKey: string;
-  subjectToken: string;
-  retryCount: number;
-  currentAttempt?: number;
-}
-
-interface OciConfig {
-  privateKey: crypto.KeyObject;
-  publicKey: crypto.KeyObject;
-  upstToken: string;
-  ociFingerprint: string;
-  ociTenancy: string;
-  ociRegion: string;
-}
-
-// Add type for config object
-interface ConfigInputs {
-  oidc_client_identifier: string;
-  domain_base_url: string;
-  oci_tenancy: string;
-  oci_region: string;
-}
 
 // Improve error handling with custom error class
 class TokenExchangeError extends Error {
