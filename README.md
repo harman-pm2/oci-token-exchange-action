@@ -121,7 +121,46 @@ The following commit types will not trigger a version update:
 - `build`: Build system changes
 - `ci`: CI configuration changes
 
-### Examples
+### Release Workflow
+
+Our project follows a structured release process from development to production:
+
+1. **Development Phase**:
+   - Create a feature branch from `development`: `git checkout -b feature/my-feature`
+   - Make your changes following the [Conventional Commits](https://www.conventionalcommits.org/) format
+   - Run tests locally: `npm test`
+   - Commit changes: `git commit -m "feat: add new feature"`
+   - Push to your feature branch: `git push origin feature/my-feature`
+
+2. **Integration to Development**:
+   - Create a pull request targeting the `development` branch
+   - Address review comments and ensure all checks pass
+   - Squash commits if necessary to maintain a clean history
+   - Merge the pull request to `development`
+   - Verify integration tests pass on the `development` branch
+
+3. **Creating a Release**:
+   - When ready to release, create a pull request from `development` to `main`
+   - This PR represents a release candidate
+   - Run final verification on the release candidate
+   - Once approved, merge the pull request to `main`
+
+4. **Automated Release Process**:
+   - Merging to `main` will automatically trigger the semantic-release workflow
+   - The workflow will:
+     - Analyze commit messages to determine version bump
+     - Update the CHANGELOG.md file automatically
+     - Create a new Git tag with the new version
+     - Publish to npm (if configured)
+     - Create a GitHub release with release notes
+
+5. **Post-Release**:
+   - The CHANGELOG.md will be updated with the new version and its changes
+   - A new Git tag will be created with the version number
+   - A GitHub release will be published with generated release notes
+   - Sync the `main` branch back to `development`: `git checkout development && git merge main && git push`
+
+This workflow ensures that features are properly integrated and tested in the development environment before being released to production via the main branch.
 
 ## License
 
