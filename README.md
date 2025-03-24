@@ -73,7 +73,7 @@ pipelines:
           - oci os ns get
 ```
 
-## Environment Variables
+## Environment Variables / Github Secrets 
 
 | Variable | Description | Required |
 |----------|-------------|----------|

@@ -30,7 +30,7 @@ jobs:
         domain_base_url: ${{vars.DOMAIN_BASE_URL}}
         oci_tenancy: ${{vars.OCI_TENANCY}}
         oci_region: ${{vars.OCI_REGION}}
-        retry_count: '3'
+        retry_count: '7'
         ci_platform: 'github'
 
     - name: Run OCI CLI Command
