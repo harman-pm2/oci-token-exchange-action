@@ -235,6 +235,7 @@ function debugPrintJWTToken(platform: Platform, token: string) {
     const tokenParts = token.split('.');
     platform.logger.debug(`JWT Header: ${Buffer.from(tokenParts[0], 'base64').toString('utf8')}`);
     platform.logger.debug(`JWT Payload: ${Buffer.from(tokenParts[1], 'base64').toString('utf8')}`);
+    platform.logger.debug(`JWT Signature: ${Buffer.from(tokenParts[2], 'base64').toString('utf8')}`);
   }
 }
 
