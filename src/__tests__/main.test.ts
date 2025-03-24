@@ -5,8 +5,27 @@ import * as crypto from 'crypto';
 import { configureOciCli, OciConfig } from '../main';
 import { Platform, PlatformLogger } from '../platforms/types';
 
-jest.mock('fs/promises');
-jest.mock('path');
+// Properly mock fs/promises with correct return types
+jest.mock('fs/promises', () => {
+  const mockFs = {
+    writeFile: jest.fn<() => Promise<void>>(),
+    access: jest.fn<() => Promise<void>>(),
+    mkdir: jest.fn<() => Promise<void>>(),
+    chmod: jest.fn<() => Promise<void>>()
+  };
+  
+  // Set up return values with proper typing
+  mockFs.writeFile.mockResolvedValue(undefined);
+  mockFs.access.mockResolvedValue(undefined);
+  mockFs.mkdir.mockResolvedValue(undefined);
+  mockFs.chmod.mockResolvedValue(undefined);
+  
+  return mockFs;
+});
+
+jest.mock('path', () => ({
+  join: jest.fn((...segments) => segments.join('/'))
+}));
 
 class MockPlatform implements Platform {
   public readonly logger: PlatformLogger;
@@ -34,14 +53,15 @@ describe('main.ts', () => {
 
   beforeEach(() => {
     mockPlatform = new MockPlatform();
-    // Create test keys
+    
+    // Generate actual RSA keys for testing
     testKeyPair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
       publicKeyEncoding: { type: 'spki', format: 'pem' },
       privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
     });
-
-    // Use key objects directly instead of exported strings
+    
+    // Create proper RSA keys that will work with pkcs1 format
     testConfig = {
       privateKey: crypto.createPrivateKey(testKeyPair.privateKey),
       publicKey: crypto.createPublicKey(testKeyPair.publicKey),
@@ -53,8 +73,6 @@ describe('main.ts', () => {
 
     process.env.HOME = '/mock/home';
     jest.clearAllMocks();
-    // Cast fs.access using jest.MockedFunction to conform with the correct type arguments.
-    (fs.access as jest.MockedFunction<typeof fs.access>).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -83,7 +101,8 @@ describe('main.ts', () => {
     });
 
     it('should handle file write errors', async () => {
-      (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mockRejectedValueOnce(new Error('Write failed'));
+      const writeError = new Error('Write failed');
+      (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mockRejectedValueOnce(writeError);
       await expect(configureOciCli(mockPlatform, testConfig)).rejects.toThrow('Failed to write OCI configuration files');
     });
 

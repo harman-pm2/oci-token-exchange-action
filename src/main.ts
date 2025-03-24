@@ -93,7 +93,7 @@ class TokenExchangeError extends Error {
 }
 
 // Update tokenExchangeJwtToUpst to accept platform as first parameter
-async function tokenExchangeJwtToUpst(
+export async function tokenExchangeJwtToUpst(
   platform: Platform,
   {
     tokenExchangeURL,
