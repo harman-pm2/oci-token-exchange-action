@@ -1,0 +1,38 @@
+image: node:20
+
+definitions:
+  steps:
+    - step:
+        name: Install OCI Tools
+        script:
+          - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
+          - bash install.sh --accept-all-defaults
+          - export PATH=$PATH:/root/bin
+          - npm ci
+          - npm run build
+
+pipelines:
+  default:
+    - step:
+        name: Setup OCI CLI 
+        oidc: true
+        script:
+          - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
+          - bash install.sh --accept-all-defaults
+          - export PATH=$PATH:/root/bin
+          - npm ci --ignore-scripts
+          - npm run build:cli
+          - >
+            export PLATFORM=bitbucket &&
+            export OIDC_CLIENT_ID=${OIDC_CLIENT_ID} &&
+            export DOMAIN_URL=${DOMAIN_URL} &&
+            export OCI_TENANCY=${OCI_TENANCY} &&
+            export OCI_REGION=${OCI_REGION} &&
+            export RETRY_COUNT=3
+          - node ./dist/cli.js || exit 1
+          - oci os ns get
+        artifacts:
+          - ".oci/**"
+          - "private_key.pem"
+          - "public_key.pem"
+          - "session"

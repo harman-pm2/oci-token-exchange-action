@@ -1,12 +1,12 @@
 {
-    "name": "@gtrevorrow/oci-token-exchange-action",
-    "description": "Exchange GitHub OIDC JWT for OCI UPST and configure runner for OCI CLI to use the UPST",
+    "name": "@gtrevorrow/oci-token-exchange",
+    "description": "OCI Usder Principal Token Exchange for GitHub Actions, GitLab CI, and Bitbucket Pipelines",
     "version": "1.0.0",
     "author": {
         "name": "Oracle Cloud Infrastructure",
         "email": "gordon.trevorrow@oracle.com"
     },
-    "private": true,
+    "private": false,
     "homepage": "https://github.com/gtrevorrow/oci-token-exchange-action/blob/README.md",
     "repository": {
         "type": "git",
@@ -24,6 +24,9 @@
     "exports": {
         ".": "./dist/main.js"
     },
+    "bin": {
+        "oci-token-exchange": "./dist/cli.js"
+    },
     "engines": {
         "node": ">=20"
     },
@@ -35,12 +38,16 @@
         "lint": "npx eslint . -c ./.github/linters/.eslintrc.yml",
         "package": "npx ncc build src/index.ts -o dist --source-map --license LICENSE.txt",
         "all": "npm run format:write && npm run lint && npm run package",
-        "test": "jest"
+        "test": "jest",
+        "build:cli": "tsc && chmod +x dist/cli.js",
+        "package:cli": "npm run build:cli && npm pack",
+        "prepare": "npm run build",
+        "release": "semantic-release"
     },
     "files": [
+        "dist",
         "LICENSE.txt",
-        "THIRD_PARTY_LICENSES.txt",
-        "dist/*"
+        "README.md"
     ],
     "license": "UPL-1.0",
     "dependencies": {
@@ -53,7 +60,7 @@
     },
     "devDependencies": {
         "@types/jest": "^29.5.13",
-        "@types/node": "^20.12.12",
+        "@types/node": "^20.17.11",
         "@typescript-eslint/eslint-plugin": "^7.18.0",
         "@typescript-eslint/parser": "^7.18.0",
         "@vercel/ncc": "^0.38.1",
@@ -61,11 +68,30 @@
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-prettier": "^5.2.1",
         "jest": "^29.7.0",
+        "list": "^2.0.19",
+        "npm": "^11.0.0",
         "prettier": "^3.3.3",
         "prettier-eslint": "^16.3.0",
         "test-jest": "^1.0.1",
         "ts-jest": "^29.2.5",
         "typescript": "^5.5.4",
-        "typescript-eslint": "^8.1.0"
+        "typescript-eslint": "^8.1.0",
+        "semantic-release": "^22.0.0",
+        "@semantic-release/changelog": "^6.0.3",
+        "@semantic-release/git": "^10.0.1"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "release": {
+        "branches": ["main"],
+        "plugins": [
+            "@semantic-release/commit-analyzer",
+            "@semantic-release/release-notes-generator",
+            "@semantic-release/changelog",
+            "@semantic-release/npm",
+            "@semantic-release/github",
+            "@semantic-release/git"
+        ]
     }
 }

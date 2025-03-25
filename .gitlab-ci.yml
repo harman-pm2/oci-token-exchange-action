@@ -1,0 +1,28 @@
+image: node:20
+
+.oci_setup: &oci_setup |
+  curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
+  bash install.sh --accept-all-defaults
+  source ~/.bashrc
+  npm ci
+  npm run build
+
+deploy:
+  script:
+    - *oci_setup
+    - export CI_JOB_JWT_V2="$(cat $CI_JOB_JWT_FILE)"
+    - |
+      PLATFORM=gitlab \
+      OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
+      DOMAIN_URL=${DOMAIN_URL} \
+      OCI_TENANCY=${OCI_TENANCY} \
+      OCI_REGION=${OCI_REGION} \
+      RETRY_COUNT=3 \
+      node ./dist/cli.js
+    # Verify OCI CLI configuration
+    - oci os ns get
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  id_tokens:
+    ID_TOKEN:
+      aud: https://cloud.oracle.com/gitlab

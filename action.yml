@@ -4,6 +4,10 @@ branding:
   color: red
   icon: cloud
 inputs:
+  ci_platform:
+    description: 'CI platform (github, gitlab, or bitbucket)'
+    required: false
+    default: 'github'
   oidc_client_identifier:  
     description: 'OIDC Client Identifier'
     required: true

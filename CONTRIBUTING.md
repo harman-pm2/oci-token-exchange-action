@@ -1,4 +1,4 @@
-CContributing to this repository
+Contributing to this repository
 We welcome your contributions! There are multiple ways to contribute, even if you're not a developer.
 
 Opening issues

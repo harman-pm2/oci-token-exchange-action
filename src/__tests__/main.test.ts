@@ -1,76 +1,122 @@
-import * as io from '@actions/io';
-import * as fs from 'fs';
+import { jest, expect, describe, it, beforeEach, afterEach } from '@jest/globals';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { configureOciCli } from '../main'; // Adjust the import path as needed
+import { configureOciCli, OciConfig } from '../main';
+import { Platform, PlatformLogger } from '../platforms/types';
 
-// Mock dependencies
-jest.mock('@actions/io');
-jest.mock('fs');
-jest.mock('path');
+// Properly mock fs/promises with correct return types
+jest.mock('fs/promises', () => {
+  const mockFs = {
+    writeFile: jest.fn<() => Promise<void>>(),
+    access: jest.fn<() => Promise<void>>(),
+    mkdir: jest.fn<() => Promise<void>>(),
+    chmod: jest.fn<() => Promise<void>>()
+  };
+  
+  // Set up return values with proper typing
+  mockFs.writeFile.mockResolvedValue(undefined);
+  mockFs.access.mockResolvedValue(undefined);
+  mockFs.mkdir.mockResolvedValue(undefined);
+  mockFs.chmod.mockResolvedValue(undefined);
+  
+  return mockFs;
+});
+
+jest.mock('path', () => ({
+  join: jest.fn((...segments) => segments.join('/'))
+}));
+
+class MockPlatform implements Platform {
+  public readonly logger: PlatformLogger;
+
+  constructor() {
+    this.logger = {
+      debug: jest.fn(),
+      info: jest.fn(),
+      warning: jest.fn(),
+      error: jest.fn()
+    };
+  }
+
+  getInput = jest.fn<(name: string, required?: boolean) => string>();
+  setOutput = jest.fn();
+  setFailed = jest.fn();
+  isDebug = jest.fn<() => boolean>().mockReturnValue(false);
+  getOIDCToken = jest.fn<(audience: string) => Promise<string>>().mockResolvedValue('mock-token');
+}
 
 describe('main.ts', () => {
-  const publicKey = crypto.createPublicKey({
-    key: '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7v5z5J5x5J5x5J5x5J5x\n-----END PUBLIC KEY-----\n',
-    format: 'pem',
-  });
-  const privateKey = crypto.createPrivateKey({
-    key: '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDv/nPknnHknnHk\n-----END PRIVATE KEY-----\n',
-    format: 'pem',
-  });
+  let mockPlatform: MockPlatform;
+  let testConfig: OciConfig;
+  let testKeyPair: crypto.KeyPairSyncResult<string, string>;
 
   beforeEach(() => {
+    mockPlatform = new MockPlatform();
+    
+    // Generate actual RSA keys for testing
+    testKeyPair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
+    });
+    
+    // Create proper RSA keys that will work with pkcs1 format
+    testConfig = {
+      privateKey: crypto.createPrivateKey(testKeyPair.privateKey),
+      publicKey: crypto.createPublicKey(testKeyPair.publicKey),
+      upstToken: 'test-token',
+      ociFingerprint: 'test-fingerprint',
+      ociTenancy: 'test-tenancy',
+      ociRegion: 'test-region'
+    };
+
+    process.env.HOME = '/mock/home';
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    jest.resetModules();
+    delete process.env.HOME;
+  });
+
   describe('configureOciCli', () => {
-    it('should configure OCI CLI with the UPST token', async () => {
-      const mockHome = '/mock/home';
-      process.env.HOME = mockHome;
+    it('should create OCI configuration successfully', async () => {
+      await configureOciCli(mockPlatform, testConfig);
 
-      const mockOciConfigDir = path.join(mockHome, '.oci');
-      const mockOciConfigFile = path.join(mockOciConfigDir, 'config');
-      const mockOciPrivateKeyFile = path.join(mockHome, 'private_key.pem');
-      const mockOciPublicKeyFile = path.join(mockHome, 'public_key.pem');
-      const mockUpstTokenFile = path.join(mockHome, 'session');
-
-      (io.mkdirP as jest.Mock).mockResolvedValue(undefined);
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
-
-      const upstToken = 'mockUpstToken';
-      const ociUser = 'mockOciUser';
-      const ociFingerprint = 'mockOciFingerprint';
-      const ociTenancy = 'mockOciTenancy';
-      const ociRegion = 'mockOciRegion';
-
-      await configureOciCli(privateKey, publicKey, upstToken, ociUser, ociFingerprint, ociTenancy, ociRegion);
-
-      expect(io.mkdirP).toHaveBeenCalledWith(mockOciConfigDir);
-      expect(fs.existsSync).toHaveBeenCalledWith(mockOciConfigDir);
-      expect(fs.writeFileSync).toHaveBeenCalledWith(mockOciConfigFile, expect.any(String));
-      expect(fs.writeFileSync).toHaveBeenCalledWith(mockOciPrivateKeyFile, expect.any(String));
-      expect(fs.writeFileSync).toHaveBeenCalledWith(mockUpstTokenFile, upstToken);
+      expect(fs.mkdir).toHaveBeenCalledWith(expect.stringContaining('.oci'), { recursive: true });
+      expect(fs.writeFile).toHaveBeenCalledTimes(4);
+      expect(fs.chmod).toHaveBeenCalledWith(expect.stringContaining('private_key.pem'), '600');
     });
 
-    it('should throw an error if HOME environment variable is not defined', async () => {
+    it('should throw error if HOME is undefined', async () => {
       delete process.env.HOME;
-
-      await expect(configureOciCli(privateKey, publicKey, 'mockUpstToken', 'mockOciUser', 'mockOciFingerprint', 'mockOciTenancy', 'mockOciRegion'))
-        .rejects
-        .toThrow('HOME environment variable is not defined');
+      await expect(configureOciCli(mockPlatform, testConfig)).rejects.toThrow('HOME environment variable is not defined');
     });
 
-    it('should throw an error if OCI config directory cannot be created', async () => {
-      const mockHome = '/mock/home';
-      process.env.HOME = mockHome;
+    it('should handle directory creation failure', async () => {
+      const mkdirMock = fs.mkdir as jest.MockedFunction<typeof fs.mkdir>;
+      mkdirMock.mockRejectedValueOnce(new Error('Permission denied'));
+      await expect(configureOciCli(mockPlatform, testConfig)).rejects.toThrow('Unable to create OCI Config folder');
+    });
 
-      (io.mkdirP as jest.Mock).mockResolvedValue(undefined);
-      (fs.existsSync as jest.Mock).mockReturnValue(false);
+    it('should handle file write errors', async () => {
+      const writeError = new Error('Write failed');
+      (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mockRejectedValueOnce(writeError);
+      await expect(configureOciCli(mockPlatform, testConfig)).rejects.toThrow('Failed to write OCI configuration files');
+    });
 
-      await expect(configureOciCli(privateKey, publicKey, 'mockUpstToken', 'mockOciUser', 'mockOciFingerprint', 'mockOciTenancy', 'mockOciRegion'))
-        .rejects
-        .toThrow('Unable to create OCI Config folder');
+    it('should write correct OCI config content', async () => {
+      await configureOciCli(mockPlatform, testConfig);
+      // Verify that the config file (first fs.writeFile call) contains expected snippets.
+      const fsWriteFileMock = fs.writeFile as jest.MockedFunction<typeof fs.writeFile>;
+      const configCall = fsWriteFileMock.mock.calls.find(call => typeof call[0] === 'string' && call[0].includes('config'));
+      if (!configCall) {
+        throw new Error('Config write call not found in mock calls');
+      }
+      expect(configCall[1]).toContain(`fingerprint=${testConfig.ociFingerprint}`);
+      expect(configCall[1]).toContain(`tenancy=${testConfig.ociTenancy}`);
+      expect(configCall[1]).toContain(`region=${testConfig.ociRegion}`);
     });
   });
 });
