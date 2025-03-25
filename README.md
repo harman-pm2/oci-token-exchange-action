@@ -123,7 +123,7 @@ The following commit types will not trigger a version update:
 
 ### Release Workflow
 
-Our project follows a structured release process from development to production:
+Our project follows a structured release process:
 
 1. **Development Phase**:
    - Create a feature branch from `development`: `git checkout -b feature/my-feature`
@@ -145,19 +145,23 @@ Our project follows a structured release process from development to production:
    - Run final verification on the release candidate
    - Once approved, merge the pull request to `main`
 
-4. **Automated Release Process**:
-   - Merging to `main` will automatically trigger the semantic-release workflow
-   - The workflow will:
-     - Analyze commit messages to determine version bump
-     - Update the CHANGELOG.md file automatically
-     - Create a new Git tag with the new version
+4. **Release Tagging**:
+   - After merging to `main`, create a version tag manually to trigger the release:
+     ```bash
+     git checkout main
+     git pull
+     git tag -a v0.1.0 -m "Initial release"  # Or appropriate version
+     git push origin v0.1.0
+     ```
+   - The tag push will trigger the semantic-release workflow which will:
+     - Analyze the commit history
+     - Determine the appropriate version based on conventional commits
+     - Create a GitHub release with auto-generated notes from the commit history
      - Publish to npm (if configured)
-     - Create a GitHub release with release notes
+   - Note: The manually created tag is used only to trigger the workflow; semantic-release 
+     will determine the actual version number independently based on commit history
 
 5. **Post-Release**:
-   - The CHANGELOG.md will be updated with the new version and its changes
-   - A new Git tag will be created with the version number
-   - A GitHub release will be published with generated release notes
    - Sync the `main` branch back to `development`: `git checkout development && git merge main && git push`
 
 This workflow ensures that features are properly integrated and tested in the development environment before being released to production via the main branch.
