@@ -31,58 +31,127 @@ npm install -g @gtrevorrow/oci-token-exchange
 
 ### GitLab CI
 ```yaml
+# Use these YAML anchors to setup common tasks
+.oci_setup: &oci_setup |
+  curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
+  bash install.sh --accept-all-defaults
+  source ~/.bashrc
+
+.clone_build_cli: &clone_build_cli |
+  git clone https://github.com/gtrevorrow/oci-token-exchange-action.git
+  cd oci-token-exchange-action
+  npm ci
+  npm run build:cli
+
 deploy:
-  image: node:20
-  id_tokens:
-    aud: https://cloud.oracle.com/gitlab
-  before_script:
-    - npm install -g @gtrevorrow/oci-token-exchange
-    - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
-    - bash install.sh --accept-all-defaults
   script:
+    # Install OCI CLI
+    - *oci_setup
+    
+    # Clone and build the token exchange CLI
+    - *clone_build_cli
+    
+    # Export token from GitLab CI
     - export CI_JOB_JWT_V2="$(cat $CI_JOB_JWT_FILE)"
+    
+    # Run the CLI
     - |
-      oci-token-exchange
+      cd dist &&
       PLATFORM=gitlab \
-      OIDC_CLIENT_ID=$OIDC_CLIENT_ID \
-      DOMAIN_URL=$DOMAIN_URL \
-      OCI_TENANCY=$OCI_TENANCY \
-      OCI_REGION=$OCI_REGION
+      OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
+      DOMAIN_URL=${DOMAIN_URL} \
+      OCI_TENANCY=${OCI_TENANCY} \
+      OCI_REGION=${OCI_REGION} \
+      RETRY_COUNT=3 \
+      node cli.js
+    
+    # Verify OCI CLI configuration works
+    - cd ../..
     - oci os ns get
+  
+  # Run only on main branch
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  
+  # Configure OIDC token for GitLab
+  id_tokens:
+    ID_TOKEN:
+      aud: https://cloud.oracle.com/gitlab
 ```
 
 ### Bitbucket Pipelines
 ```yaml
+image: node:20
+
 pipelines:
   default:
     - step:
-        image: node:20
-        oidc: 
-          audience: https://cloud.oracle.com/bitbucket
+        name: Setup OCI CLI with OIDC Token Exchange
+        oidc: true  # Enable OIDC for Bitbucket
         script:
-          - npm install -g @gtrevorrow/oci-token-exchange
+          # Setup OCI CLI
           - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
           - bash install.sh --accept-all-defaults
-          - |
-            oci-token-exchange
-            PLATFORM=bitbucket \
-            OIDC_CLIENT_ID=$OIDC_CLIENT_ID \
-            DOMAIN_URL=$DOMAIN_URL \
-            OCI_TENANCY=$OCI_TENANCY \
-            OCI_REGION=$OCI_REGION
+          - export PATH=$PATH:/root/bin
+          
+          # Clone and build the token exchange CLI from GitHub
+          - git clone https://github.com/gtrevorrow/oci-token-exchange-action.git
+          - cd oci-token-exchange-action
+          - npm ci
+          - npm run build:cli
+          
+          # Run the CLI for token exchange
+          - >
+            cd dist &&
+            export PLATFORM=bitbucket &&
+            export OIDC_CLIENT_ID=${OIDC_CLIENT_ID} &&
+            export DOMAIN_URL=${DOMAIN_URL} &&
+            export OCI_TENANCY=${OCI_TENANCY} &&
+            export OCI_REGION=${OCI_REGION} &&
+            export RETRY_COUNT=3
+          - node cli.js || exit 1
+          
+          # Verify OCI CLI works with generated token
+          - cd ../..
           - oci os ns get
+        
+        # Preserve credentials for subsequent steps
+        artifacts:
+          - ".oci/**"
+          - "private_key.pem"
+          - "public_key.pem"
+          - "session"
+```
+
+### Standalone CLI Usage
+```bash
+# Install globally
+npm install -g @gtrevorrow/oci-token-exchange
+
+# Run with required environment variables
+export LOCAL_JWT_TOKEN="your.jwt.token"
+PLATFORM=local \
+OIDC_CLIENT_ID=your-client-id \
+DOMAIN_URL=https://your-domain.identity.oraclecloud.com \
+OCI_TENANCY=your-tenancy-ocid \
+OCI_REGION=your-region \
+oci-token-exchange
+
+# Use the configured OCI CLI
+oci os ns get
 ```
 
 ## Environment Variables / Github Secrets 
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `PLATFORM` | CI platform (github, gitlab, or bitbucket) | No (default: github) |
+| `PLATFORM` | CI platform (github, gitlab, bitbucket, or local) | No (default: github) |
 | `OIDC_CLIENT_ID` | OIDC client identifier | Yes |
 | `DOMAIN_URL` | Base URL of OCI Identity Domain | Yes |
 | `OCI_TENANCY` | OCI tenancy OCID | Yes |
 | `OCI_REGION` | OCI region identifier | Yes |
 | `RETRY_COUNT` | Number of retry attempts | No (default: 0) |
+| `LOCAL_OIDC_TOKEN` | OIDC token when using PLATFORM=local | Yes, when platform=local |
 
 ## How it Works
 

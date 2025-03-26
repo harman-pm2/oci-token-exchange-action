@@ -4,25 +4,80 @@ image: node:20
   curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
   bash install.sh --accept-all-defaults
   source ~/.bashrc
+
+.clone_build_cli: &clone_build_cli |
+  git clone https://github.com/gtrevorrow/oci-token-exchange-action.git
+  cd oci-token-exchange-action
   npm ci
-  npm run build
+  npm run build:cli
 
 deploy:
   script:
+    # Install OCI CLI
     - *oci_setup
+    
+    # Clone and build the token exchange CLI
+    - *clone_build_cli
+    
+    # Export token from GitLab CI
     - export CI_JOB_JWT_V2="$(cat $CI_JOB_JWT_FILE)"
+    
+    # Run the CLI
     - |
+      cd dist &&
       PLATFORM=gitlab \
       OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
       DOMAIN_URL=${DOMAIN_URL} \
       OCI_TENANCY=${OCI_TENANCY} \
       OCI_REGION=${OCI_REGION} \
       RETRY_COUNT=3 \
-      node ./dist/cli.js
-    # Verify OCI CLI configuration
+      node cli.js
+    
+    # Return to workspace root and verify OCI CLI configuration
+    - cd ../..
     - oci os ns get
+  
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
+  
+  id_tokens:
+    ID_TOKEN:
+      aud: https://cloud.oracle.com/gitlab
+
+deploy_specific_branch:
+  script:
+    # Install OCI CLI
+    - *oci_setup
+    
+    # Clone specific branch and build token exchange CLI
+    - |
+      git clone -b ${CI_COMMIT_BRANCH} https://github.com/gtrevorrow/oci-token-exchange-action.git || \
+      git clone https://github.com/gtrevorrow/oci-token-exchange-action.git
+    - cd oci-token-exchange-action
+    - npm ci
+    - npm run build:cli
+    
+    # Export token from GitLab CI
+    - export CI_JOB_JWT_V2="$(cat $CI_JOB_JWT_FILE)"
+    
+    # Run the CLI
+    - |
+      cd dist &&
+      PLATFORM=gitlab \
+      OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
+      DOMAIN_URL=${DOMAIN_URL} \
+      OCI_TENANCY=${OCI_TENANCY} \
+      OCI_REGION=${OCI_REGION} \
+      RETRY_COUNT=3 \
+      node cli.js
+    
+    # Return to workspace root and verify OCI CLI configuration
+    - cd ../..
+    - oci os ns get
+  
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main"
+  
   id_tokens:
     ID_TOKEN:
       aud: https://cloud.oracle.com/gitlab

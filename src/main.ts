@@ -48,6 +48,10 @@ const PLATFORM_CONFIGS: Record<string, PlatformConfig> = {
   bitbucket: {
     tokenEnvVar: 'BITBUCKET_STEP_OIDC_TOKEN',
     audience: 'https://cloud.oracle.com/bitbucket'
+  },
+  local: {
+    tokenEnvVar: 'LOCAL_OIDC_TOKEN',
+    audience: 'https://cloud.oracle.com'
   }
 };
 

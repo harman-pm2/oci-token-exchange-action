@@ -8,31 +8,77 @@ definitions:
           - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
           - bash install.sh --accept-all-defaults
           - export PATH=$PATH:/root/bin
-          - npm ci
-          - npm run build
 
 pipelines:
   default:
     - step:
-        name: Setup OCI CLI 
-        oidc: true
+        name: Setup OCI CLI with OIDC Token Exchange
+        oidc: true  # This enables OIDC for this step
         script:
+          # Setup OCI CLI
           - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
           - bash install.sh --accept-all-defaults
           - export PATH=$PATH:/root/bin
-          - npm ci --ignore-scripts
+          
+          # Clone and build the token exchange CLI from GitHub
+          - git clone https://github.com/gtrevorrow/oci-token-exchange-action.git
+          - cd oci-token-exchange-action
+          - npm ci
           - npm run build:cli
+          
+          # Use the CLI for token exchange
           - >
+            cd dist &&
             export PLATFORM=bitbucket &&
             export OIDC_CLIENT_ID=${OIDC_CLIENT_ID} &&
             export DOMAIN_URL=${DOMAIN_URL} &&
             export OCI_TENANCY=${OCI_TENANCY} &&
             export OCI_REGION=${OCI_REGION} &&
             export RETRY_COUNT=3
-          - node ./dist/cli.js || exit 1
+          - node cli.js || exit 1
+          
+          # Return to workspace root and verify OCI CLI works with generated token
+          - cd ../..
           - oci os ns get
         artifacts:
           - ".oci/**"
           - "private_key.pem"
           - "public_key.pem"
           - "session"
+  
+  branches:
+    main:
+      - step:
+          name: Setup OCI CLI from GitHub Repository (Production)
+          oidc: true
+          script:
+            # Setup OCI CLI
+            - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
+            - bash install.sh --accept-all-defaults
+            - export PATH=$PATH:/root/bin
+            
+            # Clone main branch from GitHub and build CLI
+            - git clone --branch main https://github.com/gtrevorrow/oci-token-exchange-action.git
+            - cd oci-token-exchange-action
+            - npm ci
+            - npm run build:cli
+            
+            # Run the CLI
+            - >
+              cd dist &&
+              export PLATFORM=bitbucket &&
+              export OIDC_CLIENT_ID=${OIDC_CLIENT_ID} &&
+              export DOMAIN_URL=${DOMAIN_URL} &&
+              export OCI_TENANCY=${OCI_TENANCY} &&
+              export OCI_REGION=${OCI_REGION} &&
+              export RETRY_COUNT=3
+            - node cli.js || exit 1
+            
+            # Return to workspace root and verify OCI CLI works
+            - cd ../..
+            - oci os ns get
+          artifacts:
+            - ".oci/**"
+            - "private_key.pem"
+            - "public_key.pem"
+            - "session"
