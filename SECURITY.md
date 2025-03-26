@@ -11,7 +11,7 @@ The following versions of OCI Token Exchange Action are currently supported with
 
 ## Reporting a Vulnerability
 
-The OCI Token Exchange Action team takes security vulnerabilities seriously. We appreciate your efforts to responsibly disclose your findings.
+Your efforts to responsibly disclose your findings is appreciated.
 
 **Do not report security vulnerabilities through public GitHub issues.**
 
@@ -37,26 +37,23 @@ Your report should include:
 
 After submitting your report:
 
-- You will receive acknowledgment of your report within 3 business days
-- We will provide an initial assessment within 10 business days
-- We aim to release patches for verified vulnerabilities within 30 days, depending on complexity
-- We will keep you informed about our progress throughout the process
+- You will receive acknowledgment of your report 
+- An initial assessment will be provided within 10 business days
 
 If the vulnerability is confirmed:
-- We will develop and release a fix
+- I will develop and release a fix
 - You will be credited for the discovery (unless you prefer to remain anonymous)
-- We will add the issue to our security advisories
 
 If the report is declined:
-- We will provide a detailed explanation of our assessment
+- I will provide a detailed explanation of our assessment
 
 ### Disclosure Policy
 
-We follow coordinated vulnerability disclosure. We request that you:
+I follow coordinated vulnerability disclosure. I request that you:
 
-- Allow us sufficient time to investigate and address the vulnerability before any public disclosure
+- Allow me sufficient time to investigate and address the vulnerability before any public disclosure
 - Avoid exploiting the vulnerability
-- Demonstrate good faith by not disrupting or degrading Oracle's services
+
 
 ## Security Best Practices for Users
 

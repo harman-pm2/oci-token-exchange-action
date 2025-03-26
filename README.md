@@ -123,7 +123,7 @@ The following commit types will not trigger a version update:
 
 ### Release Workflow
 
-Our project follows a structured release process:
+The project follows a structured release process:
 
 1. **Development Phase**:
    - Create a feature branch from `development`: `git checkout -b feature/my-feature`
