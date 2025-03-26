@@ -11,6 +11,10 @@ on:
 jobs:
   test-publish:
     runs-on: ubuntu-latest
+    permissions:
+      # Only needs read access to content and packages, and write to packages to publish 
+      contents: 'read'
+      packages: 'write'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3

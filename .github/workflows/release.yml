@@ -8,6 +8,15 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      # Needs write access to create releases, read packages, and write for discussions (for notes)
+      contents: 'write'
+      packages: 'read'
+      discussions: 'write'
+      # Pull requests permission is used to comment on PRs mentioned in release notes
+      pull-requests: 'write'
+      # Issues permission is used to comment on issues being closed in the release
+      issues: 'write'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
