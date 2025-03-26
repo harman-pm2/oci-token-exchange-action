@@ -121,6 +121,22 @@ The following commit types will not trigger a version update:
 - `build`: Build system changes
 - `ci`: CI configuration changes
 
+### Version Management
+
+In our workflow, version numbers are managed as follows:
+
+- **Development Branch**: No version tags are applied. This branch contains integrated features that are preparing for release.
+
+- **Main Branch**: All official versioning happens here via semantic-release.
+  - When code is merged to main, we manually create an initial tag to trigger the release workflow
+  - Semantic-release then analyzes the commit messages to determine the proper version
+  - The package is published to npm with the correct semantic version
+
+- **Test Publishing**: 
+  - For testing npm publishing without affecting release versions, we use npm's tag feature
+  - Test versions are published with the `test` tag: `npm install @gtrevorrow/oci-token-exchange@test`
+  - These test versions don't interfere with the semantic versioning of production releases
+
 ### Release Workflow
 
 The project follows a structured release process:
