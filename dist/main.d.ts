@@ -17,8 +17,8 @@ interface OciConfig {
     ociRegion: string;
 }
 declare class TokenExchangeError extends Error {
-    readonly cause?: unknown;
-    constructor(message: string, cause?: unknown);
+    readonly cause?: unknown | undefined;
+    constructor(message: string, cause?: unknown | undefined);
 }
 export declare function tokenExchangeJwtToUpst(platform: Platform, { tokenExchangeURL, clientCred, ociPublicKey, subjectToken, retryCount, currentAttempt }: TokenExchangeConfig): Promise<UpstTokenResponse>;
 export declare function configureOciCli(platform: Platform, config: OciConfig): Promise<void>;
