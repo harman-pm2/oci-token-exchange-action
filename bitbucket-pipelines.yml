@@ -20,11 +20,14 @@ pipelines:
           - bash install.sh --accept-all-defaults
           - export PATH=$PATH:/root/bin
           
-          # Clone and build the token exchange CLI from GitHub
-          - git clone https://github.com/gtrevorrow/oci-token-exchange-action.git
+          # Clone the develop branch and build the token exchange CLI
+          - git clone -b develop https://github.com/gtrevorrow/oci-token-exchange-action.git || git clone https://github.com/gtrevorrow/oci-token-exchange-action.git
           - cd oci-token-exchange-action
           - npm ci
+          
+          # Build the CLI with explicit commands instead of relying on script
           - npm run build:cli
+          - chmod +x dist/cli.js
           
           # Use the CLI for token exchange
           - >
@@ -61,7 +64,10 @@ pipelines:
             - git clone --branch main https://github.com/gtrevorrow/oci-token-exchange-action.git
             - cd oci-token-exchange-action
             - npm ci
-            - npm run build:cli
+            
+            # Build the CLI with explicit commands
+            - npm run build
+            - chmod +x dist/cli.js
             
             # Run the CLI
             - >

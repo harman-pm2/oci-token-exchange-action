@@ -6,7 +6,7 @@ image: node:20
   source ~/.bashrc
 
 .clone_build_cli: &clone_build_cli |
-  git clone https://github.com/gtrevorrow/oci-token-exchange-action.git
+  git clone -b develop https://github.com/gtrevorrow/oci-token-exchange-action.git || git clone https://github.com/gtrevorrow/oci-token-exchange-action.git
   cd oci-token-exchange-action
   npm ci
   npm run build:cli
