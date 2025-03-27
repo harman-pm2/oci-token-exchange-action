@@ -5,7 +5,7 @@ branding:
   icon: cloud
 inputs:
   ci_platform:
-    description: 'CI platform (github, gitlab, or bitbucket)'
+    description: 'CI platform (github)'
     required: false
     default: 'github'
   oidc_client_identifier:  

@@ -7,8 +7,8 @@ import { main } from './main';
 const envVarMappings: Record<string, string> = {
   // Standard CLI env vars
   PLATFORM: 'platform',
-  OIDC_CLIENT_ID: 'oidc_client_identifier',
-  DOMAIN_URL: 'domain_base_url',
+  OIDC_CLIENT_IDENTIFIER: 'oidc_client_identifier',
+  DOMAIN_BASE_URL: 'domain_base_url',
   OCI_TENANCY: 'oci_tenancy',
   OCI_REGION: 'oci_region',
   RETRY_COUNT: 'retry_count',
