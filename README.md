@@ -143,15 +143,30 @@ oci os ns get
 
 ## Environment Variables / Github Secrets 
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `PLATFORM` | CI platform (github, gitlab, bitbucket, or local) | No (default: github) |
-| `OIDC_CLIENT_ID` | OIDC client identifier | Yes |
-| `DOMAIN_URL` | Base URL of OCI Identity Domain | Yes |
-| `OCI_TENANCY` | OCI tenancy OCID | Yes |
-| `OCI_REGION` | OCI region identifier | Yes |
-| `RETRY_COUNT` | Number of retry attempts | No (default: 0) |
-| `LOCAL_OIDC_TOKEN` | OIDC token when using PLATFORM=local | Yes, when platform=local |
+The action supports flexible environment variable naming to make it easier to use across different platforms:
+
+| Variable | Alternate Names | Description | Required |
+|----------|----------------|-------------|----------|
+| `OIDC_CLIENT_IDENTIFIER` | `INPUT_OIDC_CLIENT_IDENTIFIER` | OIDC client identifier | Yes |
+| `DOMAIN_BASE_URL` | `INPUT_DOMAIN_BASE_URL` | Base URL of OCI Identity Domain | Yes |
+| `OCI_TENANCY` | `INPUT_OCI_TENANCY` | OCI tenancy OCID | Yes |
+| `OCI_REGION` | `INPUT_OCI_REGION` | OCI region identifier | Yes |
+| `PLATFORM` | `INPUT_PLATFORM` | CI platform (`github`, `gitlab`, `bitbucket`, or `local`) | No (default: `github`) |
+| `RETRY_COUNT` | `INPUT_RETRY_COUNT` | Number of retry attempts | No (default: `0`) |
+| `LOCAL_OIDC_TOKEN` | - | OIDC token when using PLATFORM=local | Yes, when platform=local |
+| `CI_JOB_JWT_V2` | - | GitLab CI JWT token | Yes, when platform=gitlab |
+| `BITBUCKET_STEP_OIDC_TOKEN` | - | Bitbucket OIDC token | Yes, when platform=bitbucket |
+| `DEBUG` | - | Enable debug output | No (default: `false`) |
+
+### Environment Variable Handling
+
+Variables can be provided in two ways:
+
+1. **GitHub Actions Format**: Variables in the format `INPUT_VARIABLE_NAME` (used by GitHub Actions)
+2. **Standard Format**: Plain environment variables matching the exact names listed above
+
+The GitHub Action automatically maps variables from GitHub's format to the standard format, but if you're using the CLI directly, use the variable names exactly as shown above.
+
 
 ## How it Works
 
