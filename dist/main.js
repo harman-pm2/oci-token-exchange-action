@@ -50,6 +50,8 @@ const crypto_1 = __importDefault(require("crypto"));
 const axios_1 = __importDefault(require("axios"));
 const github_1 = require("./platforms/github");
 const cli_1 = require("./platforms/cli");
+const types_1 = require("./types");
+Object.defineProperty(exports, "TokenExchangeError", { enumerable: true, get: function () { return types_1.TokenExchangeError; } });
 const PLATFORM_CONFIGS = {
     github: {
         audience: 'https://cloud.oracle.com'
@@ -93,15 +95,6 @@ function calcFingerprint(publicKey) {
     hash.update(publicKeyData);
     return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1);
 }
-// Improve error handling with custom error class
-class TokenExchangeError extends Error {
-    constructor(message, cause) {
-        super(message);
-        this.cause = cause;
-        this.name = 'TokenExchangeError';
-    }
-}
-exports.TokenExchangeError = TokenExchangeError;
 // Update tokenExchangeJwtToUpst to accept platform as first parameter
 async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, ociPublicKey, subjectToken, retryCount, currentAttempt = 0 }) {
     const headers = {
@@ -138,10 +131,10 @@ async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, 
         else {
             platform.logger.error('Failed to exchange JWT for UPST after multiple attempts');
             if (error instanceof Error) {
-                throw new TokenExchangeError(`Token exchange failed: ${error.message}`, error);
+                throw new types_1.TokenExchangeError(`Token exchange failed: ${error.message}`, error);
             }
             else {
-                throw new TokenExchangeError('Token exchange failed with an unknown error');
+                throw new types_1.TokenExchangeError('Token exchange failed with an unknown error');
             }
         }
     }
@@ -212,7 +205,7 @@ async function configureOciCli(platform, config) {
             ]);
         }
         catch (error) {
-            throw new TokenExchangeError('Failed to write OCI configuration files', error);
+            throw new types_1.TokenExchangeError('Failed to write OCI configuration files', error);
         }
     }
     catch (error) {
@@ -287,7 +280,7 @@ async function main() {
         // Error Handling
     }
     catch (error) {
-        if (error instanceof TokenExchangeError) {
+        if (error instanceof types_1.TokenExchangeError) {
             platform.setFailed(`Token exchange failed: ${error.message}`);
             if (error.cause) {
                 platform.logger.debug(`Cause: ${error.cause}`);

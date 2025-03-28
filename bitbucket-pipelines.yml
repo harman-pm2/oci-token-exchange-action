@@ -29,12 +29,12 @@ pipelines:
           - npm run build:cli
           - chmod +x dist/cli.js
           
-          # Use the CLI for token exchange with correctly mapped environment variables
+          # Use the CLI for token exchange
           - >
             cd dist &&
             export PLATFORM=bitbucket &&
-            export OIDC_CLIENT_ID=${OIDC_CLIENT_IDENTIFIER} &&
-            export DOMAIN_URL=${DOMAIN_BASE_URL} &&
+            export OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} &&
+            export DOMAIN_BASE_URL=${DOMAIN_BASE_URL} &&
             export OCI_TENANCY=${OCI_TENANCY} &&
             export OCI_REGION=${OCI_REGION} &&
             export RETRY_COUNT=3
@@ -69,12 +69,12 @@ pipelines:
             - npm run build
             - chmod +x dist/cli.js
             
-            # Run the CLI with correctly mapped environment variables
+            # Run the CLI
             - >
               cd dist &&
               export PLATFORM=bitbucket &&
-              export OIDC_CLIENT_ID=${OIDC_CLIENT_IDENTIFIER} &&
-              export DOMAIN_URL=${DOMAIN_BASE_URL} &&
+              export OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} &&
+              export DOMAIN_BASE_URL=${DOMAIN_BASE_URL} &&
               export OCI_TENANCY=${OCI_TENANCY} &&
               export OCI_REGION=${OCI_REGION} &&
               export RETRY_COUNT=3

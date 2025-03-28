@@ -9,33 +9,13 @@ import axios from 'axios';
 import { Platform, PlatformConfig } from './platforms/types';
 import { GitHubPlatform } from './platforms/github';
 import { CLIPlatform } from './platforms/cli';
-
-// Add interfaces for better type safety
-interface TokenExchangeConfig {
-  tokenExchangeURL: string;
-  clientCred: string;
-  ociPublicKey: string;
-  subjectToken: string;
-  retryCount: number;
-  currentAttempt?: number;
-}
-
-interface OciConfig {
-  privateKey: crypto.KeyObject;
-  publicKey: crypto.KeyObject;
-  upstToken: string;
-  ociFingerprint: string;
-  ociTenancy: string;
-  ociRegion: string;
-}
-
-// Add type for config object
-interface ConfigInputs {
-  oidc_client_identifier: string;
-  domain_base_url: string;
-  oci_tenancy: string;
-  oci_region: string;
-}
+import { 
+  TokenExchangeConfig, 
+  OciConfig, 
+  ConfigInputs, 
+  UpstTokenResponse,
+  TokenExchangeError 
+} from './types';
 
 const PLATFORM_CONFIGS: Record<string, PlatformConfig> = {
   github: {
@@ -85,15 +65,6 @@ function calcFingerprint(publicKey: crypto.KeyObject): string {
   const hash = crypto.createHash('MD5');
   hash.update(publicKeyData);
   return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1);
-}
-
-
-// Improve error handling with custom error class
-class TokenExchangeError extends Error {
-  constructor(message: string, public readonly cause?: unknown) {
-    super(message);
-    this.name = 'TokenExchangeError';
-  }
 }
 
 // Update tokenExchangeJwtToUpst to accept platform as first parameter
@@ -228,11 +199,6 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
   }
 }
 
-// Encapsulates the REST call to the OCI Domain OAuth token endpoint to exchange a GitHub OIDC ID Token for an OCI UPS token
-interface UpstTokenResponse {
-  token: string;
-}
-
 // Update debugPrintJWTToken to accept platform as parameter
 function debugPrintJWTToken(platform: Platform, token: string) {
   if (platform.isDebug()) {
@@ -328,6 +294,6 @@ if (require.main === module) {
   main();
 }
 
-// Add proper exports
+// Re-export the types for convenience
 export { TokenExchangeError, TokenExchangeConfig, OciConfig };
 
