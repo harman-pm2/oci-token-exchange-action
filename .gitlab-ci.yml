@@ -73,7 +73,7 @@ deploy_specific_branch:
     
     # Return to workspace root and verify OCI CLI configuration
     - cd ../..
-    - oci os ns get
+    - oci --auth security_token os ns get
   
   rules:
     - if: $CI_COMMIT_BRANCH != "main"

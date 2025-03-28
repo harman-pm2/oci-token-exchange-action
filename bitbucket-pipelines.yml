@@ -42,7 +42,7 @@ pipelines:
           
           # Return to workspace root and verify OCI CLI works with generated token
           - cd ../..
-          - oci os ns get
+          - oci --auth security_token os ns get
         artifacts:
           - ".oci/**"
           - "private_key.pem"
