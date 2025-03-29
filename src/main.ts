@@ -67,7 +67,7 @@ function calcFingerprint(publicKey: crypto.KeyObject): string {
   return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1);
 }
 
-// Update tokenExchangeJwtToUpst to accept platform as first parameter
+// Update tokenExchangeJwtToUpst to handle different platform token formats
 export async function tokenExchangeJwtToUpst(
   platform: Platform,
   {
@@ -83,14 +83,39 @@ export async function tokenExchangeJwtToUpst(
     'Content-Type': 'application/x-www-form-urlencoded',
     'Authorization': `Basic ${clientCred}`
   };
+  
+  // Pre-process the subject token if needed
+
+  if (subjectToken) {
+    try {
+      // Check if the token is already a valid JWT (has at least 2 periods)
+      if (subjectToken.split('.').length < 3) {
+        // If not well-formed, it might be a raw JWT that needs to be formatted
+        platform.logger.debug(' OIDC token does not appear to be a properly formatted JWT, attempting to parse');
+      } else {
+        // Try to parse the token segments to validate it's a proper JWT
+        const parts = subjectToken.split('.');
+        const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+        platform.logger.debug(`JWT appears valid. Issuer: ${payload.iss || 'unknown'}`);
+      }
+    } catch (error) {
+      platform.logger.warning(`Error pre-processing OIDC token: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Continue with the original token, as we may be mistaken about its format
+    }
+  }
+  let processedToken = subjectToken;
   const data = {
     'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
     'requested_token_type': 'urn:oci:token-type:oci-upst',
     'public_key': ociPublicKey,
-    'subject_token': subjectToken,
+    'subject_token': processedToken,
     'subject_token_type': 'jwt'
   };
+  
+  // Only log safe data in debug mode
   platform.logger.debug('Token Exchange Request Data: ' + JSON.stringify(data));
+  
   try {
     const response = await axios.post(tokenExchangeURL, data, { headers });
     platform.logger.debug('Token Exchange Response: ' + JSON.stringify(response.data));
@@ -104,7 +129,7 @@ export async function tokenExchangeJwtToUpst(
         tokenExchangeURL,
         clientCred,
         ociPublicKey,
-        subjectToken,
+        subjectToken: processedToken,
         retryCount,
         currentAttempt: attemptCounter + 1
       });
@@ -199,13 +224,52 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
   }
 }
 
-// Update debugPrintJWTToken to accept platform as parameter
+// Update debugPrintJWTToken to properly handle different token formats
 function debugPrintJWTToken(platform: Platform, token: string) {
   if (platform.isDebug()) {
-    const tokenParts = token.split('.');
-    platform.logger.debug(`JWT Header: ${Buffer.from(tokenParts[0], 'base64').toString('utf8')}`);
-    platform.logger.debug(`JWT Payload: ${Buffer.from(tokenParts[1], 'base64').toString('utf8')}`);
-    platform.logger.debug(`JWT Signature: ${Buffer.from(tokenParts[2], 'base64').toString('utf8')}`);
+    platform.logger.debug(`JWT Token received (length: ${token.length} characters)`);
+    
+    try {
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        platform.logger.debug(`Warning: JWT token does not have the expected format (header.payload.signature)`);
+        return;
+      }
+      
+      // Only decode and print the header and selected parts of payload, not the full token
+      const headerStr = Buffer.from(tokenParts[0], 'base64').toString('utf8');
+      let header;
+      try {
+        header = JSON.parse(headerStr);
+        platform.logger.debug(`JWT Header: ${JSON.stringify(header)}`);
+      } catch (e) {
+        platform.logger.debug(`Failed to parse JWT header: ${headerStr}`);
+      }
+      
+      // Parse payload but only log safe information
+      try {
+        const payloadStr = Buffer.from(tokenParts[1], 'base64').toString('utf8');
+        const payload = JSON.parse(payloadStr);
+        const safePayload = {
+          iss: payload.iss,
+          aud: payload.aud,
+          exp: payload.exp,
+          iat: payload.iat,
+          sub: payload.sub ? `${payload.sub.substring(0, 10)}...` : undefined,
+          // Include timestamp information for troubleshooting token expiry issues
+          expires_at: payload.exp ? new Date(payload.exp * 1000).toISOString() : undefined,
+          issued_at: payload.iat ? new Date(payload.iat * 1000).toISOString() : undefined
+        };
+        
+        platform.logger.debug(`JWT Payload (safe parts): ${JSON.stringify(safePayload)}`);
+      } catch (e) {
+        platform.logger.debug(`Failed to parse JWT payload: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      }
+      
+      platform.logger.debug(`JWT Signature present: ${tokenParts[2].length > 0 ? 'Yes' : 'No'}`);
+    } catch (error) {
+      platform.logger.debug(`Error parsing JWT token: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }
 

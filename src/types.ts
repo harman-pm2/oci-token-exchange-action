@@ -7,6 +7,7 @@ export interface TokenExchangeConfig {
   tokenExchangeURL: string;
   clientCred: string;
   ociPublicKey: string;
+  /** JWT token obtained from the CI platform's OIDC provider */
   subjectToken: string;
   retryCount: number;
   currentAttempt?: number;
