@@ -67,6 +67,16 @@ function calcFingerprint(publicKey: crypto.KeyObject): string {
   return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1);
 }
 
+// Add a function to validate URLs
+function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 // Update tokenExchangeJwtToUpst to handle different platform token formats
 export async function tokenExchangeJwtToUpst(
   platform: Platform,
@@ -151,11 +161,13 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
     if (!home) {
       throw new Error('HOME environment variable is not defined');
     }
-    const ociConfigDir: string = path.join(home, '.oci');
-    const ociConfigFile: string = path.join(ociConfigDir, 'config');
-    const ociPrivateKeyFile: string = path.join(home, 'private_key.pem');
-    const ociPublicKeyFile: string = path.join(home, 'public_key.pem');
-    const upstTokenFile: string = path.join(home, 'session');
+
+    // Sanitize file paths to prevent path injection
+    const ociConfigDir: string = path.resolve(path.join(home, '.oci'));
+    const ociConfigFile: string = path.resolve(path.join(ociConfigDir, 'config'));
+    const ociPrivateKeyFile: string = path.resolve(path.join(home, 'private_key.pem'));
+    const ociPublicKeyFile: string = path.resolve(path.join(home, 'public_key.pem'));
+    const upstTokenFile: string = path.resolve(path.join(home, 'session'));
 
     debugPrint(platform, `OCI Config Dir: ${ociConfigDir}`);
 
@@ -213,6 +225,7 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
         fs.writeFile(ociPublicKeyFile, publicKeyPem)
           .then(() => platform.logger.debug(`Successfully wrote public key to ${ociPublicKeyFile}`)),
         fs.writeFile(upstTokenFile, config.upstToken)
+          .then(() => fs.chmod(upstTokenFile, '600'))
           .then(() => platform.logger.debug(`Successfully wrote session token to ${upstTokenFile}`))
       ]);
     } catch (error) {
@@ -300,6 +313,11 @@ export async function main(): Promise<void> {
     const retryCount = parseInt(platform.getInput('retry_count', false) || '0');
     if (isNaN(retryCount) || retryCount < 0) {
       throw new Error('retry_count must be a non-negative number');
+    }
+
+    // Validate the tokenExchangeURL
+    if (!isValidUrl(`${config.domain_base_url}/oauth2/v1/token`)) {
+      throw new Error('Invalid domain_base_url provided');
     }
 
     const idToken = await platform.getOIDCToken(PLATFORM_CONFIGS[platformType].audience);

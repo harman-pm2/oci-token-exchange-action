@@ -46,6 +46,7 @@ export class CLIPlatform implements Platform {
       if (!token) {
         throw new Error(`${this.config.tokenEnvVar} environment variable not found`);
       }
+      // Do not log the token here
       return token;
     }
     throw new Error('No OIDC token configuration available');
