@@ -122,12 +122,11 @@ async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, 
             // Continue with the original token, as we may be mistaken about its format
         }
     }
-    let processedToken = subjectToken;
     const data = {
         'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
         'requested_token_type': 'urn:oci:token-type:oci-upst',
         'public_key': ociPublicKey,
-        'subject_token': processedToken,
+        'subject_token': subjectToken,
         'subject_token_type': 'jwt'
     };
     // Only log safe data in debug mode
@@ -146,7 +145,7 @@ async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, 
                 tokenExchangeURL,
                 clientCred,
                 ociPublicKey,
-                subjectToken: processedToken,
+                subjectToken: subjectToken,
                 retryCount,
                 currentAttempt: attemptCounter + 1
             });
