@@ -23,8 +23,10 @@ jest.mock('fs/promises', () => {
   return mockFs;
 });
 
+// Fix the path module mock
 jest.mock('path', () => ({
-  join: jest.fn((...segments) => segments.join('/'))
+  resolve: jest.fn().mockImplementation((...parts) => parts.join('/')),
+  join: jest.fn().mockImplementation((...parts) => parts.join('/'))
 }));
 
 class MockPlatform implements Platform {
