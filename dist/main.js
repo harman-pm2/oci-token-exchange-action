@@ -95,7 +95,17 @@ function calcFingerprint(publicKey) {
     hash.update(publicKeyData);
     return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1);
 }
-// Update tokenExchangeJwtToUpst to handle different platform token formats
+// Function to validate URLs
+function isValidUrl(url) {
+    try {
+        new URL(url);
+        return true;
+    }
+    catch (_) {
+        return false;
+    }
+}
+// Function to exchange JWT for OCI UPST token
 async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, ociPublicKey, subjectToken, retryCount, currentAttempt = 0 }) {
     const headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -129,12 +139,12 @@ async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, 
         'subject_token': subjectToken,
         'subject_token_type': 'jwt'
     };
-    // Only log safe data in debug mode
+    // Note that this will log potentially sensitive information but will leave it up to the user to decide if they want to enable debug logging with this risk
     platform.logger.debug('Token Exchange Request Data: ' + JSON.stringify(data));
     try {
         const response = await axios_1.default.post(tokenExchangeURL, data, { headers });
         platform.logger.debug('Token Exchange Response: ' + JSON.stringify(response.data));
-        return response.data;
+        return response.data; // auto wrapped in a Promise
     }
     catch (error) {
         const attemptCounter = currentAttempt ? currentAttempt : 0;
@@ -168,11 +178,12 @@ async function configureOciCli(platform, config) {
         if (!home) {
             throw new Error('HOME environment variable is not defined');
         }
-        const ociConfigDir = path.join(home, '.oci');
-        const ociConfigFile = path.join(ociConfigDir, 'config');
-        const ociPrivateKeyFile = path.join(home, 'private_key.pem');
-        const ociPublicKeyFile = path.join(home, 'public_key.pem');
-        const upstTokenFile = path.join(home, 'session');
+        // Sanitize file paths to prevent path injection
+        const ociConfigDir = path.resolve(path.join(home, '.oci'));
+        const ociConfigFile = path.resolve(path.join(ociConfigDir, 'config'));
+        const ociPrivateKeyFile = path.resolve(path.join(home, 'private_key.pem'));
+        const ociPublicKeyFile = path.resolve(path.join(home, 'public_key.pem'));
+        const upstTokenFile = path.resolve(path.join(home, 'session'));
         debugPrint(platform, `OCI Config Dir: ${ociConfigDir}`);
         const ociConfig = `[DEFAULT]
     user='not used'
@@ -223,6 +234,7 @@ async function configureOciCli(platform, config) {
                 fs.writeFile(ociPublicKeyFile, publicKeyPem)
                     .then(() => platform.logger.debug(`Successfully wrote public key to ${ociPublicKeyFile}`)),
                 fs.writeFile(upstTokenFile, config.upstToken)
+                    .then(() => fs.chmod(upstTokenFile, '600'))
                     .then(() => platform.logger.debug(`Successfully wrote session token to ${upstTokenFile}`))
             ]);
         }
@@ -305,6 +317,10 @@ async function main() {
         const retryCount = parseInt(platform.getInput('retry_count', false) || '0');
         if (isNaN(retryCount) || retryCount < 0) {
             throw new Error('retry_count must be a non-negative number');
+        }
+        // Validate the tokenExchangeURL
+        if (!isValidUrl(`${config.domain_base_url}/oauth2/v1/token`)) {
+            throw new Error('Invalid domain_base_url provided');
         }
         const idToken = await platform.getOIDCToken(PLATFORM_CONFIGS[platformType].audience);
         platform.logger.debug(`Token obtained from ${platformType}`);

@@ -141,6 +141,16 @@ oci-token-exchange
 oci os ns get
 ```
 
+### Debugging
+
+To enable detailed logging, set the `DEBUG` environment variable to `true`:
+
+```bash
+export DEBUG=true
+```
+
+This will log additional information, such as token exchange requests and responses, to help with troubleshooting.
+
 ## Environment Variables / Github Secrets 
 
 The action supports flexible environment variable naming to make it easier to use across different platforms:

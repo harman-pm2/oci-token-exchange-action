@@ -9,12 +9,12 @@ import axios from 'axios';
 import { Platform, PlatformConfig } from './platforms/types';
 import { GitHubPlatform } from './platforms/github';
 import { CLIPlatform } from './platforms/cli';
-import { 
-  TokenExchangeConfig, 
-  OciConfig, 
-  ConfigInputs, 
+import {
+  TokenExchangeConfig,
+  OciConfig,
+  ConfigInputs,
   UpstTokenResponse,
-  TokenExchangeError 
+  TokenExchangeError
 } from './types';
 
 const PLATFORM_CONFIGS: Record<string, PlatformConfig> = {
@@ -41,7 +41,7 @@ function createPlatform(platformType: string): Platform {
   if (!config) {
     throw new Error(`Unsupported platform: ${platformType}`);
   }
-  
+
   return platformType === 'github' ? new GitHubPlatform() : new CLIPlatform(config);
 }
 
@@ -67,7 +67,7 @@ function calcFingerprint(publicKey: crypto.KeyObject): string {
   return hash.digest('hex').replace(/(.{2})/g, '$1:').slice(0, -1);
 }
 
-// Add a function to validate URLs
+// Function to validate URLs
 function isValidUrl(url: string): boolean {
   try {
     new URL(url);
@@ -77,8 +77,8 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-// Update tokenExchangeJwtToUpst to handle different platform token formats
-export async function tokenExchangeJwtToUpst(
+// Function to exchange JWT for OCI UPST token
+export async  function tokenExchangeJwtToUpst(
   platform: Platform,
   {
     tokenExchangeURL,
@@ -87,13 +87,13 @@ export async function tokenExchangeJwtToUpst(
     subjectToken,
     retryCount,
     currentAttempt = 0
-  }: TokenExchangeConfig
+  }: TokenExchangeConfig 
 ): Promise<UpstTokenResponse> {
   const headers = {
     'Content-Type': 'application/x-www-form-urlencoded',
     'Authorization': `Basic ${clientCred}`
   };
-  
+
   // Pre-process the subject token if needed
 
   if (subjectToken) {
@@ -122,20 +122,19 @@ export async function tokenExchangeJwtToUpst(
     'subject_token': subjectToken,
     'subject_token_type': 'jwt'
   };
-  
-  // Only log safe data in debug mode
+  // Note that this will log potentially sensitive information but will leave it up to the user to decide if they want to enable debug logging with this risk
   platform.logger.debug('Token Exchange Request Data: ' + JSON.stringify(data));
-  
+
   try {
     const response = await axios.post(tokenExchangeURL, data, { headers });
     platform.logger.debug('Token Exchange Response: ' + JSON.stringify(response.data));
-    return response.data;
+    return response.data; // auto wrapped in a Promise
   } catch (error) {
     const attemptCounter = currentAttempt ? currentAttempt : 0;
     if (retryCount > 0 && retryCount >= attemptCounter) {
       platform.logger.warning(`Token exchange failed, retrying ... (${retryCount - attemptCounter - 1} retries left)`);
       await delay(attemptCounter + 1);
-      return tokenExchangeJwtToUpst(platform, {
+      return tokenExchangeJwtToUpst(platform, { // Promise flattening
         tokenExchangeURL,
         clientCred,
         ociPublicKey,
@@ -196,11 +195,11 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
       } catch (e) {
         // File does not exist, proceed silently
       }
-      
+
       // Export and validate keys first
       const privateKeyPem = config.privateKey.export({ type: 'pkcs1', format: 'pem' });
       const publicKeyPem = config.publicKey.export({ type: 'spki', format: 'pem' });
-      
+
       if (!privateKeyPem || typeof privateKeyPem !== 'string') {
         throw new Error('Private key export failed or invalid type');
       }
@@ -215,7 +214,7 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
       }
 
       platform.logger.debug('Validated all file contents before writing');
-      
+
       await Promise.all([
         fs.writeFile(ociConfigFile, ociConfig)
           .then(() => platform.logger.debug(`Successfully wrote OCI config to ${ociConfigFile}`)),
@@ -241,14 +240,14 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
 function debugPrintJWTToken(platform: Platform, token: string) {
   if (platform.isDebug()) {
     platform.logger.debug(`JWT Token received (length: ${token.length} characters)`);
-    
+
     try {
       const tokenParts = token.split('.');
       if (tokenParts.length !== 3) {
         platform.logger.debug(`Warning: JWT token does not have the expected format (header.payload.signature)`);
         return;
       }
-      
+
       // Only decode and print the header and selected parts of payload, not the full token
       const headerStr = Buffer.from(tokenParts[0], 'base64').toString('utf8');
       let header;
@@ -258,7 +257,7 @@ function debugPrintJWTToken(platform: Platform, token: string) {
       } catch (e) {
         platform.logger.debug(`Failed to parse JWT header: ${headerStr}`);
       }
-      
+
       // Parse payload but only log safe information
       try {
         const payloadStr = Buffer.from(tokenParts[1], 'base64').toString('utf8');
@@ -273,12 +272,12 @@ function debugPrintJWTToken(platform: Platform, token: string) {
           expires_at: payload.exp ? new Date(payload.exp * 1000).toISOString() : undefined,
           issued_at: payload.iat ? new Date(payload.iat * 1000).toISOString() : undefined
         };
-        
+
         platform.logger.debug(`JWT Payload (safe parts): ${JSON.stringify(safePayload)}`);
       } catch (e) {
         platform.logger.debug(`Failed to parse JWT payload: ${e instanceof Error ? e.message : 'Unknown error'}`);
       }
-      
+
       platform.logger.debug(`JWT Signature present: ${tokenParts[2].length > 0 ? 'Yes' : 'No'}`);
     } catch (error) {
       platform.logger.debug(`Error parsing JWT token: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -295,14 +294,14 @@ function debugPrint(platform: Platform, message: string) {
 
 // Main function now creates a local platform instance and passes it to subfunctions
 export async function main(): Promise<void> {
-  let platform: Platform ; // Initialize with default platform
+  let platform: Platform; // Initialize with default platform
   const platformType = process.env.PLATFORM || 'github';
-    if (!PLATFORM_CONFIGS[platformType]) {
-      throw new Error(`Unsupported platform: ${platformType}`);
-    }
-    platform = createPlatform(platformType);
+  if (!PLATFORM_CONFIGS[platformType]) {
+    throw new Error(`Unsupported platform: ${platformType}`);
+  }
+  platform = createPlatform(platformType);
   try {
-     
+
     // Use typed object for config
     const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region']
       .reduce<Partial<ConfigInputs>>((acc, input) => ({
@@ -322,7 +321,7 @@ export async function main(): Promise<void> {
 
     const idToken = await platform.getOIDCToken(PLATFORM_CONFIGS[platformType].audience);
     platform.logger.debug(`Token obtained from ${platformType}`);
-    
+
     debugPrintJWTToken(platform, idToken);
 
     // Calculate the fingerprint of the public key
@@ -341,7 +340,7 @@ export async function main(): Promise<void> {
       retryCount
     });
     platform.logger.info(`OCI issued a Session Token `);
-   
+
     //Setup the OCI cli/sdk on the CI platform runner with the UPST token
     const ociConfig: OciConfig = {
       privateKey,
