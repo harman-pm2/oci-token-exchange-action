@@ -11,15 +11,13 @@ export class CLIPlatform implements Platform {
   constructor(private config: PlatformConfig) {}
 
   getInput(name: string, required = false): string {
-    // First check for GitHub Actions style input variable
-    const inputValue = process.env[`INPUT_${name.toUpperCase()}`];
-    
+
+  
     // Then check for direct environment variable (using common naming conventions)
-    const directValue = process.env[name.toUpperCase()] || 
+    const value = process.env[name.toUpperCase()] || 
+                          process.env[`INPUT_${name.toUpperCase()}`] ||
                          process.env[`OCI_${name.toUpperCase()}`] || 
-                         process.env[`OIDC_${name.toUpperCase()}`];
-    
-    const value = inputValue || directValue || '';
+                         process.env[`OIDC_${name.toUpperCase()}`] || '';
     
     if (required && !value) {
       throw new Error(`Input required and not supplied: ${name}`);
