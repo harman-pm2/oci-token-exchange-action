@@ -281,7 +281,7 @@ function debugPrintJWTToken(platform, token) {
                     expires_at: payload.exp ? new Date(payload.exp * 1000).toISOString() : undefined,
                     issued_at: payload.iat ? new Date(payload.iat * 1000).toISOString() : undefined
                 };
-                platform.logger.debug(`JWT Payload (safe parts): ${JSON.stringify(safePayload)}`);
+                platform.logger.debug(`JWT Payload: ${payloadStr}`);
             }
             catch (e) {
                 platform.logger.debug(`Failed to parse JWT payload: ${e instanceof Error ? e.message : 'Unknown error'}`);
