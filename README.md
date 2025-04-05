@@ -228,8 +228,8 @@ In our workflow, version numbers are managed as follows:
 
 - **Test Publishing**: 
   - For testing npm publishing without affecting release versions, we use npm's tag feature
-  - Test versions are published with the `test` tag: `npm install @gtrevorrow/oci-token-exchange@test`
-  - These test versions don't interfere with the semantic versioning of production releases
+  - Test versions are published with a version-timestamp-beta tag format: `npm install @gtrevorrow/oci-token-exchange@X.Y.Z-YYYYMMDD-beta`
+  - These tagged versions don't interfere with the semantic versioning of production releases
 
 ### Release Workflow
 
