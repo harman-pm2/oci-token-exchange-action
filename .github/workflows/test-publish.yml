@@ -12,12 +12,13 @@ jobs:
   test-publish:
     runs-on: ubuntu-latest
     permissions:
-      # Only needs read access to content and packages, and write to packages to publish 
       contents: 'read'
       packages: 'write'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Important for access to all history and tags
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
