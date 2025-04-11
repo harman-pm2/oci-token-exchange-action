@@ -111,20 +111,21 @@ async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, 
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${clientCred}`
     };
-    // Pre-process the subject token if needed
-    if (subjectToken) {
+    if (subjectToken && platform.isDebug()) {
+        // Do some basic validation on the JWT token that we are going to exchange
         try {
+            const parts = subjectToken.split('.');
             // Check if the token is already a valid JWT (has at least 2 periods)
-            if (subjectToken.split('.').length < 3) {
+            if (parts.length == 3) {
                 // If not well-formed, it might be a raw JWT that needs to be formatted
                 platform.logger.debug(' OIDC token does not appear to be a properly formatted JWT, attempting to parse');
             }
             else {
-                // Try to parse the token segments to validate it's a proper JWT
-                const parts = subjectToken.split('.');
+                // Try to parse the token segments to validate it's a proper(ish) JWT
+                // Note: This is a very basic check and does not guarantee the token's validity
                 const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
                 const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-                platform.logger.debug(`JWT appears valid. Issuer: ${payload.iss || 'unknown'}`);
+                platform.logger.debug(`JWT appears structured as expected with a header , payload and signature . Issuer: ${payload.iss || 'unknown'}`);
             }
         }
         catch (error) {
@@ -176,7 +177,7 @@ async function configureOciCli(platform, config) {
     try {
         const home = process.env.HOME || '';
         if (!home) {
-            throw new Error('HOME environment variable is not defined');
+            throw new types_1.TokenExchangeError('HOME environment variable is not defined');
         }
         // Sanitize file paths to prevent path injection
         const ociConfigDir = path.resolve(path.join(home, '.oci'));
@@ -184,7 +185,7 @@ async function configureOciCli(platform, config) {
         const ociPrivateKeyFile = path.resolve(path.join(home, 'private_key.pem'));
         const ociPublicKeyFile = path.resolve(path.join(home, 'public_key.pem'));
         const upstTokenFile = path.resolve(path.join(home, 'session'));
-        debugPrint(platform, `OCI Config Dir: ${ociConfigDir}`);
+        platform.logger.debug(`OCI Config Dir: ${ociConfigDir}`);
         const ociConfig = `[DEFAULT]
     user='not used'
     fingerprint=${config.ociFingerprint}
@@ -281,7 +282,7 @@ function debugPrintJWTToken(platform, token) {
                     expires_at: payload.exp ? new Date(payload.exp * 1000).toISOString() : undefined,
                     issued_at: payload.iat ? new Date(payload.iat * 1000).toISOString() : undefined
                 };
-                platform.logger.debug(`JWT Payload: ${payloadStr}`);
+                platform.logger.debug(`JWT Payload (safe parts): ${JSON.stringify(safePayload)}`);
             }
             catch (e) {
                 platform.logger.debug(`Failed to parse JWT payload: ${e instanceof Error ? e.message : 'Unknown error'}`);
@@ -291,12 +292,6 @@ function debugPrintJWTToken(platform, token) {
         catch (error) {
             platform.logger.debug(`Error parsing JWT token: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
-    }
-}
-// Refactored debugPrint accepting the platform instance
-function debugPrint(platform, message) {
-    if (platform.isDebug()) {
-        platform.logger.debug(message);
     }
 }
 // Main function now creates a local platform instance and passes it to subfunctions

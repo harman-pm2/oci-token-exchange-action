@@ -2,7 +2,7 @@ import { Platform, PlatformLogger, PlatformConfig } from './types';
 
 export class CLIPlatform implements Platform {
   private readonly _logger: PlatformLogger = {
-    debug: (message: string) => console.debug(message),
+    debug: (message: string) => { if (this.isDebug()) console.debug(message); },
     info: (message: string) => console.log(message),
     warning: (message: string) => console.warn(message),
     error: (message: string) => console.error(message)

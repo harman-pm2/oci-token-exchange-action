@@ -5,7 +5,8 @@ class CLIPlatform {
     constructor(config) {
         this.config = config;
         this._logger = {
-            debug: (message) => console.debug(message),
+            debug: (message) => { if (this.isDebug())
+                console.debug(message); },
             info: (message) => console.log(message),
             warning: (message) => console.warn(message),
             error: (message) => console.error(message)
