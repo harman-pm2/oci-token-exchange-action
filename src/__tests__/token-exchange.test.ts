@@ -45,7 +45,7 @@ describe('tokenExchangeJwtToUpst', () => {
     const { publicKey } = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
       publicKeyEncoding: { type: 'spki', format: 'pem' },
-      privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs1', format: 'pem' }
     });
     
     // Export the public key as base64 for the test

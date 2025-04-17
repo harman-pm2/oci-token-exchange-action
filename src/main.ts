@@ -47,7 +47,7 @@ function createPlatform(platformType: string): Platform {
 
 // Generate RSA key pair
 const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-  modulusLength: 2048,
+  modulusLength: 2048
 });
 
 async function delay(count: number): Promise<void> {
@@ -289,12 +289,12 @@ function debugPrintJWTToken(platform: Platform, token: string) {
 
 // Main function now creates a local platform instance and passes it to subfunctions
 export async function main(): Promise<void> {
-  let platform: Platform; // Initialize with default platform
+
   const platformType = process.env.PLATFORM || 'github';
   if (!PLATFORM_CONFIGS[platformType]) {
     throw new Error(`Unsupported platform: ${platformType}`);
   }
-  platform = createPlatform(platformType);
+  const platform: Platform= createPlatform(platformType);
   try {
     // Use typed object for config
     const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region']
@@ -322,11 +322,11 @@ export async function main(): Promise<void> {
     const ociFingerprint: string = calcFingerprint(publicKey);
 
     // Get the B64 encoded public key DER
-    let publicKeyB64: string = encodePublicKeyToBase64();
+    const publicKeyB64: string = encodePublicKeyToBase64();
     platform.logger.debug(`Public Key B64: ${publicKeyB64}`);
 
     //Exchange platform OIDC token for OCI UPST
-    let upstToken: UpstTokenResponse = await tokenExchangeJwtToUpst(platform, {
+    const upstToken: UpstTokenResponse = await tokenExchangeJwtToUpst(platform, {
       tokenExchangeURL: `${config.domain_base_url}/oauth2/v1/token`,
       clientCred: Buffer.from(config.oidc_client_identifier).toString('base64'),
       ociPublicKey: publicKeyB64,

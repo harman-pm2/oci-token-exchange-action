@@ -1,5 +1,20 @@
 # Contributing to this repository
 
+## Table of Contents
+
+- [Opening issues](#opening-issues)
+- [Pre-requisites for code or documentation submissions](#pre-requisites-for-code-or-documentation-submissions)
+- [Commit messages](#commit-messages)
+- [Build, Test, Versioning and Release Process](#build-test-and-versioning)
+  - [Build & Test](#build--test)
+  - [Versioning & Release](#versioning--release)
+    - [Release Types](#release-types)
+- [Development and Release Workflow](#development-and-release-workflow)
+- [Pull request process](#pull-request-process)
+- [Code of conduct](#code-of-conduct)
+
+# Contributing to this repository
+
 We welcome your contributions! There are multiple ways to contribute, even if you're not a developer.
 
 ## Opening issues
@@ -50,7 +65,7 @@ docs(readme): clarify installation instructions
 - All commit messages must include a `Signed-off-by` line as described above.
 
 **Commit message checks:**  
-A pre-commit hook will automatically check your commit message for Conventional Commits compliance and sign-off. If your message does not comply, the commit will be rejected with an explanation.
+A commit message hook will automatically check your commit message for Conventional Commits compliance. If your message does not comply, the commit will be rejected with an explanation.
 
 If you already have Commitizen installed, you can run `git cz ...` instead of `git commit ...` and Commitizen will make sure your commit message is in the right format and provides all the necessary information.
 
@@ -64,14 +79,14 @@ npx cz
 ```
 This will guide you through the Conventional Commits format.
 
-If you don't have Commitizen installed, a pre-commit git hook will analyze your commit message and report anything that needs to be fixed. For example:
+The commit message hook will analyze your commit message and report anything that needs to be fixed. For example:
 
 ```
 $ git commit -m "Updated the contribution guide."
 ⧗   input: Updated the contribution guide.
 ✖   subject may not be empty [subject-empty]
 ✖   type may not be empty [type-empty]
-⚠   message must be signed off [signed-off-by]
+⚠   message must be signed off [Signed-off-by]
 
 ✖   found 2 problems, 1 warnings
 ⓘ   Get help: https://github.com/oracle-actions/.github/blob/main/CONTRIBUTING.md#commit-messages
@@ -81,56 +96,7 @@ husky - commit-msg hook exited with code 1 (error)
 
 If you have any questions, please check the Conventional Commits FAQ, start a discussion or open an issue.
 
-## Development and Release Workflow
-
-Our project follows a structured process from development to production, using a `develop` branch for integration and a `main` branch for releases.
-
-1. **Development Phase:**
-   - Create a feature branch from `develop`:  
-     `git checkout -b feature/my-feature`
-   - Make your changes following the [Conventional Commits](https://www.conventionalcommits.org/) format.
-   - Run tests locally: `npm test`
-   - Commit changes: `git commit -m "feat: add new feature"`
-   - Push to your feature branch: `git push origin feature/my-feature`
-
-2. **Integration to Develop:**
-   - Create a pull request targeting the `develop` branch.
-   - Address review comments and ensure all checks pass.
-   - Squash commits if necessary to maintain a clean history.
-   - Merge the pull request to `develop`.
-   - Verify integration tests pass on the `develop` branch.
-
-3. **Creating a Release:**
-   - When ready to release, create a pull request from `develop` to `main`.
-   - This PR represents a release candidate.
-   - Run final verification on the release candidate.
-   - Once approved, merge the pull request to `main`.
-
-4. **Release Tagging:**
-   - After merging to `main`, manually create a tag to trigger the release process:
-     ```bash
-     git checkout main
-     git pull
-     git tag -a v0.1.0 -m "Initial release"  # Or appropriate version
-     git push origin v0.1.0
-     ```
-   - The GitHub workflow is triggered when a tag matching `v*` is pushed.
-   - Once triggered, semantic-release will:
-     - Analyze the commits since the last release
-     - Determine the appropriate version number based on conventional commits
-     - Generate release notes automatically from commit messages
-     - Create a GitHub release with the determined version (independent of your manually created tag)
-     - Publish the package to npm (if configured)
-
-5. **Test Publishing:**  
-   For test releases, use the `.github/workflows/test-publish.yml` workflow, which can be triggered manually from the Actions tab. Test packages are published to npm with a tag like `1.2.3-YYYYMMDD-beta`.
-
-**Notes:**
-- All publishing is handled by CI; do not publish manually.
-- Only merge to `main` when ready for release.
-- See the [README](./README.md) for user installation and usage instructions.
-
-## Build, Test, and Release Process
+## Build, Test and Versioning
 
 This project uses a modern, automated build and release system powered by TypeScript, Jest, and [semantic-release](https://github.com/semantic-release/semantic-release).
 
@@ -153,6 +119,61 @@ This project follows [Semantic Versioning](https://semver.org/) and uses [semant
 - **MINOR:** New features (`feat`)
 - **PATCH:** Bug fixes and improvements (`fix`, `perf`, `refactor`)
 - **No Release:** `docs`, `style`, `test`, `chore`, `build`, `ci` do not trigger a release
+
+## Development and Release Workflow
+
+The project follows a structured process from development to production, using a `develop` branch for integration and a `main` branch for releases.
+
+1. **Development Phase:**
+   - Create a feature branch from `develop`:  
+     `git checkout -b feature/my-feature`
+   - Make your changes
+   - Run tests locally: `npm test`
+   - Commit changes: `git commit -m "feat: add new feature"` following the [Conventional Commits](https://www.conventionalcommits.org/) format
+   - Push to your feature branch: `git push origin feature/my-feature`
+
+2. **Integration to Develop:**
+   - Create a [pull request](#pull-request-process) targeting the `develop` branch.
+   - Address review comments and ensure all checks pass.
+   - Squash commits if necessary to maintain a clean history.
+   - After approval, a repository maintainer will merge your pull request into `develop`.
+   - Verify all tests pass on the `develop` branch.
+
+3. **Creating a Release:**
+   - Create a [pull request](#pull-request-process) from `develop` to `main`.
+   - This PR represents a release candidate.
+   - A repository maintainer will run final verification on the release candidate.
+   - Once approved, a repository maintainer will merge the pull request to `main`.
+
+4. **Release Tagging:**
+   - After merging to `main`, a repository maintainer will manually create a tag to trigger the release process:
+     ```bash
+     git checkout main
+     git pull
+     git tag -a v0.1.0 -m "Initial release"  # Or appropriate version
+     git push origin v0.1.0
+     ```
+   - The GitHub workflow is triggered when a tag matching `v*` is pushed.
+   - Once triggered, semantic-release will:
+     - Analyze the commits since the last release
+     - Determine the appropriate version number based on conventional commits
+     - Generate release notes automatically from commit messages
+     - Create a GitHub release with the determined version (independent of your manually created tag)
+     - Publish the package to npm (if configured)
+
+5. **Test Publishing:**  
+   For test releases, use the `.github/workflows/test-publish.yml` workflow, which can be triggered manually from the Actions tab. Test packages are published to npm with a tag like `1.2.3-YYYYMMDD-beta`.
+
+   To install a package published with a specific tag (e.g., `beta`):
+   ```bash
+   npm install @gtrevorrow/oci-token-exchange@beta
+   ```
+
+**Notes:**
+- All publishing is handled by CI; do not publish manually.
+- Only merge to `main` when ready for release.
+- See the [README](./README.md) for user installation and usage instructions.
+
 
 ## Pull request process
 

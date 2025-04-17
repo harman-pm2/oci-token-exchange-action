@@ -1,6 +1,30 @@
 # OCI Token Exchange
 
-A tool to exchange OIDC tokens for OCI session tokens, supporting multiple CI platforms:
+## Table of Contents
+
+- [Installation](#installation)
+  - [As GitHub Action](#as-github-action)
+  - [As CLI Tool](#as-cli-tool)
+- [Usage](#usage)
+  - [GitHub Actions](#github-actions)
+  - [GitLab CI](#gitlab-ci)
+    - [Option 1: Building from Source](#option-1-building-from-source)
+    - [Option 2: Using npm Package](#option-2-using-npm-package)
+  - [Bitbucket Pipelines](#bitbucket-pipelines)
+    - [Option 1: Building from Source](#option-1-building-from-source-1)
+    - [Option 2: Using npm Package](#option-2-using-npm-package-1)
+  - [Standalone CLI Usage](#standalone-cli-usage)
+  - [Debugging](#debugging)
+- [Environment Variables / Github Secrets](#environment-variables--github-secrets)
+  - [Environment Variable Handling](#environment-variable-handling)
+- [How it Works](#how-it-works)
+- [Semantic Versioning](#semantic-versioning)
+- [License](#license)
+- [Contributing](#contributing)
+
+# OCI Token Exchange
+
+A tool to exchange OIDC tokens for [OCI session tokens](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/clitoken.htm), supporting multiple CI platforms:
 - GitHub Actions
 - GitLab CI
 - Bitbucket Pipelines
@@ -15,6 +39,15 @@ A tool to exchange OIDC tokens for OCI session tokens, supporting multiple CI pl
 ### As CLI Tool
 ```bash
 npm install -g @gtrevorrow/oci-token-exchange
+
+# Install the latest version globally
+npm install -g @gtrevorrow/oci-token-exchange
+
+# Install a specific version globally (e.g., 1.2.3)
+npm install -g @gtrevorrow/oci-token-exchange@1.2.3
+
+# Install a version with a specific tag (e.g., beta)
+npm install -g @gtrevorrow/oci-token-exchange@beta
 ```
 
 ## Usage
@@ -30,6 +63,11 @@ npm install -g @gtrevorrow/oci-token-exchange
 ```
 
 ### GitLab CI
+
+#### Option 1: Building from Source
+
+This example clones the repository, builds the CLI, and then runs it.
+
 ```yaml
 # Use these YAML anchors to setup common tasks
 .oci_setup: &oci_setup |
@@ -54,7 +92,7 @@ deploy:
     # Export token from GitLab CI
     - export CI_JOB_JWT_V2="$(cat $CI_JOB_JWT_FILE)"
     
-    # Run the CLI
+    # Run the built CLI
     - |
       cd dist &&
       PLATFORM=gitlab \
@@ -79,14 +117,64 @@ deploy:
       aud: https://cloud.oracle.com/gitlab
 ```
 
+#### Option 2: Using npm Package
+
+This example installs the CLI tool directly from npm.
+
+```yaml
+# Use these YAML anchors to setup common tasks
+.oci_setup: &oci_setup |
+  curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
+  bash install.sh --accept-all-defaults
+  source ~/.bashrc
+
+deploy_npm:
+  script:
+    # Install OCI CLI
+    - *oci_setup
+    
+    # Install the token exchange CLI from npm
+    - npm install -g @gtrevorrow/oci-token-exchange
+    
+    # Export token from GitLab CI
+    - export CI_JOB_JWT_V2="$(cat $CI_JOB_JWT_FILE)"
+    
+    # Run the installed CLI
+    - |
+      PLATFORM=gitlab \
+      OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
+      DOMAIN_URL=${DOMAIN_URL} \
+      OCI_TENANCY=${OCI_TENANCY} \
+      OCI_REGION=${OCI_REGION} \
+      RETRY_COUNT=3 \
+      oci-token-exchange
+    
+    # Verify OCI CLI configuration works
+    - oci os ns get
+  
+  # Run only on main branch
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  
+  # Configure OIDC token for GitLab
+  id_tokens:
+    ID_TOKEN:
+      aud: https://cloud.oracle.com/gitlab
+```
+
 ### Bitbucket Pipelines
+
+#### Option 1: Building from Source
+
+This example clones the repository, builds the CLI, and then runs it.
+
 ```yaml
 image: node:20
 
 pipelines:
   default:
     - step:
-        name: Setup OCI CLI with OIDC Token Exchange
+        name: Setup OCI CLI with OIDC Token Exchange (Build from Source)
         oidc: true  # Enable OIDC for Bitbucket
         script:
           # Setup OCI CLI
@@ -100,7 +188,7 @@ pipelines:
           - npm ci
           - npm run build:cli
           
-          # Run the CLI for token exchange
+          # Run the built CLI for token exchange
           - >
             cd dist &&
             export PLATFORM=bitbucket &&
@@ -123,13 +211,55 @@ pipelines:
           - "session"
 ```
 
+#### Option 2: Using npm Package
+
+This example installs the CLI tool directly from npm.
+
+```yaml
+image: node:20
+
+pipelines:
+  default:
+    - step:
+        name: Setup OCI CLI with OIDC Token Exchange (npm Package)
+        oidc: true  # Enable OIDC for Bitbucket
+        script:
+          # Setup OCI CLI
+          - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
+          - bash install.sh --accept-all-defaults
+          - export PATH=$PATH:/root/bin
+          
+          # Install the token exchange CLI from npm
+          - npm install -g @gtrevorrow/oci-token-exchange
+          
+          # Run the installed CLI for token exchange
+          - >
+            export PLATFORM=bitbucket &&
+            export OIDC_CLIENT_ID=${OIDC_CLIENT_ID} &&
+            export DOMAIN_URL=${DOMAIN_URL} &&
+            export OCI_TENANCY=${OCI_TENANCY} &&
+            export OCI_REGION=${OCI_REGION} &&
+            export RETRY_COUNT=3
+          - oci-token-exchange || exit 1
+          
+          # Verify OCI CLI works with generated token
+          - oci os ns get
+        
+        # Preserve credentials for subsequent steps
+        artifacts:
+          - ".oci/**"
+          - "private_key.pem"
+          - "public_key.pem"
+          - "session"
+```
+
 ### Standalone CLI Usage
 ```bash
 # Install globally
 npm install -g @gtrevorrow/oci-token-exchange
 
 # Run with required environment variables
-export LOCAL_JWT_TOKEN="your.jwt.token"
+export LOCAL_OIDC_TOKEN="your.jwt.token"
 PLATFORM=local \
 OIDC_CLIENT_ID=your-client-id \
 DOMAIN_URL=https://your-domain.identity.oraclecloud.com \
@@ -177,7 +307,6 @@ Variables can be provided in two ways:
 
 The GitHub Action automatically maps variables from GitHub's format to the standard format, but if you're using the CLI directly, use the variable names exactly as shown above.
 
-
 ## How it Works
 
 1. Generates an RSA key pair 
@@ -197,3 +326,4 @@ This action is licensed under the [Universal Permissive License v1.0 (UPL-1.0)](
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+````

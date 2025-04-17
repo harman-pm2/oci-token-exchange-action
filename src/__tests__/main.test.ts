@@ -60,7 +60,7 @@ describe('main.ts', () => {
     testKeyPair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
       publicKeyEncoding: { type: 'spki', format: 'pem' },
-      privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs1', format: 'pem' }
     });
     
     // Create proper RSA keys that will work with pkcs1 format
