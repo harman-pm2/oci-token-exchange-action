@@ -79,7 +79,7 @@ function createPlatform(platformType) {
 }
 // Generate RSA key pair
 const { publicKey, privateKey } = crypto_1.default.generateKeyPairSync('rsa', {
-    modulusLength: 2048,
+    modulusLength: 2048
 });
 async function delay(count) {
     return new Promise(resolve => setTimeout(resolve, 1000 * count));
@@ -296,12 +296,11 @@ function debugPrintJWTToken(platform, token) {
 }
 // Main function now creates a local platform instance and passes it to subfunctions
 async function main() {
-    let platform; // Initialize with default platform
     const platformType = process.env.PLATFORM || 'github';
     if (!PLATFORM_CONFIGS[platformType]) {
         throw new Error(`Unsupported platform: ${platformType}`);
     }
-    platform = createPlatform(platformType);
+    const platform = createPlatform(platformType);
     try {
         // Use typed object for config
         const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region']
