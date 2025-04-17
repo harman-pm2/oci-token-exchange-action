@@ -172,6 +172,7 @@ The project follows a structured process from development to production, using a
 **Notes:**
 - All publishing is handled by CI; do not publish manually.
 - Only merge to `main` when ready for release.
+- **Initial Workflow Setup:** For manually triggered workflows (`workflow_dispatch`) like `test-publish.yml` to appear in the GitHub Actions UI, the workflow file must first exist in the default branch (`main`). You may need to merge a minimal version of the file into `main` initially. Subsequent development and testing can then occur on branches like `develop` by manually triggering the workflow and selecting the desired branch in the UI.
 - See the [README](./README.md) for user installation and usage instructions.
 
 
