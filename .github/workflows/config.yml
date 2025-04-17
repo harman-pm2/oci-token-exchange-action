@@ -25,6 +25,12 @@ jobs:
       shell: bash
 
     - name: Run OCI Token Exchange Action
+      uses: ./ # Use the action from the current checkout
+      with:
+        oidc_client_identifier: ${{secrets.OIDC_CLIENT_IDENTIFIER}}
+        domain_base_url: ${{vars.DOMAIN_BASE_URL}}
+
+    - name: Run OCI Token Exchange Action
       uses: gtrevorrow/oci-token-exchange-action@multi-platform
       with:
         oidc_client_identifier: ${{secrets.OIDC_CLIENT_IDENTIFIER}}
