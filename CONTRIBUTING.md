@@ -28,9 +28,41 @@ We can only accept pull requests from contributors who have been verified as hav
 
 ## Commit messages
 
-This project uses Conventional Commits and is Commitizen friendly.
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) and is Commitizen friendly.
+
+**Commit message format:**
+```
+<type>(<scope>): <short description>
+```
+- **type**: One of `feat`, `fix`, `perf`, `refactor`, `docs`, `style`, `test`, `chore`, `build`, `ci`
+- **scope**: *(optional but recommended)* The part of the codebase affected (e.g. `core`, `cli`, `github`, `config`, etc.)
+- **short description**: A concise summary of the change
+
+**Examples:**
+```
+feat(cli): add support for Bitbucket OIDC tokens
+fix(core): handle missing environment variables gracefully
+docs(readme): clarify installation instructions
+```
+
+- Use `!` after the type or scope for breaking changes, e.g. `feat(cli)!: drop Node 16 support`
+- The scope should match the affected module, platform, or feature area.
+- All commit messages must include a `Signed-off-by` line as described above.
+
+**Commit message checks:**  
+A pre-commit hook will automatically check your commit message for Conventional Commits compliance and sign-off. If your message does not comply, the commit will be rejected with an explanation.
 
 If you already have Commitizen installed, you can run `git cz ...` instead of `git commit ...` and Commitizen will make sure your commit message is in the right format and provides all the necessary information.
+
+**To create a commit message interactively, run:**
+```
+npm run commit
+```
+or
+```
+npx cz
+```
+This will guide you through the Conventional Commits format.
 
 If you don't have Commitizen installed, a pre-commit git hook will analyze your commit message and report anything that needs to be fixed. For example:
 
@@ -49,31 +81,32 @@ husky - commit-msg hook exited with code 1 (error)
 
 If you have any questions, please check the Conventional Commits FAQ, start a discussion or open an issue.
 
-## Development Workflow
+## Development and Release Workflow
 
-Our project follows a structured release process from development to production:
+Our project follows a structured process from development to production, using a `develop` branch for integration and a `main` branch for releases.
 
-1. **Development Phase**:
-   - Create a feature branch from `development`: `git checkout -b feature/my-feature`
-   - Make your changes following the [Conventional Commits](https://www.conventionalcommits.org/) format
+1. **Development Phase:**
+   - Create a feature branch from `develop`:  
+     `git checkout -b feature/my-feature`
+   - Make your changes following the [Conventional Commits](https://www.conventionalcommits.org/) format.
    - Run tests locally: `npm test`
    - Commit changes: `git commit -m "feat: add new feature"`
    - Push to your feature branch: `git push origin feature/my-feature`
 
-2. **Integration to Development**:
-   - Create a pull request targeting the `development` branch
-   - Address review comments and ensure all checks pass
-   - Squash commits if necessary to maintain a clean history
-   - Merge the pull request to `development`
-   - Verify integration tests pass on the `development` branch
+2. **Integration to Develop:**
+   - Create a pull request targeting the `develop` branch.
+   - Address review comments and ensure all checks pass.
+   - Squash commits if necessary to maintain a clean history.
+   - Merge the pull request to `develop`.
+   - Verify integration tests pass on the `develop` branch.
 
-3. **Creating a Release**:
-   - When ready to release, create a pull request from `development` to `main`
-   - This PR represents a release candidate
-   - Run final verification on the release candidate
-   - Once approved, merge the pull request to `main`
+3. **Creating a Release:**
+   - When ready to release, create a pull request from `develop` to `main`.
+   - This PR represents a release candidate.
+   - Run final verification on the release candidate.
+   - Once approved, merge the pull request to `main`.
 
-4. **Release Tagging**:
+4. **Release Tagging:**
    - After merging to `main`, manually create a tag to trigger the release process:
      ```bash
      git checkout main
@@ -81,13 +114,45 @@ Our project follows a structured release process from development to production:
      git tag -a v0.1.0 -m "Initial release"  # Or appropriate version
      git push origin v0.1.0
      ```
-   - The GitHub workflow is triggered when a tag matching `v*` is pushed
+   - The GitHub workflow is triggered when a tag matching `v*` is pushed.
    - Once triggered, semantic-release will:
      - Analyze the commits since the last release
      - Determine the appropriate version number based on conventional commits
      - Generate release notes automatically from commit messages
      - Create a GitHub release with the determined version (independent of your manually created tag)
      - Publish the package to npm (if configured)
+
+5. **Test Publishing:**  
+   For test releases, use the `.github/workflows/test-publish.yml` workflow, which can be triggered manually from the Actions tab. Test packages are published to npm with a tag like `1.2.3-YYYYMMDD-beta`.
+
+**Notes:**
+- All publishing is handled by CI; do not publish manually.
+- Only merge to `main` when ready for release.
+- See the [README](./README.md) for user installation and usage instructions.
+
+## Build, Test, and Release Process
+
+This project uses a modern, automated build and release system powered by TypeScript, Jest, and [semantic-release](https://github.com/semantic-release/semantic-release).
+
+### Build & Test
+
+- **Build:**  
+  Run `npm run build` to compile TypeScript sources to `dist/`.
+- **Lint & Format:**  
+  Run `npm run lint` and `npm run format:check` to check code style.
+- **Test:**  
+  Run `npm test` to execute all Jest tests.
+
+### Versioning & Release
+
+This project follows [Semantic Versioning](https://semver.org/) and uses [semantic-release](https://github.com/semantic-release/semantic-release) for automated version management and publishing.
+
+#### Release Types
+
+- **MAJOR:** Breaking changes (`feat!` or `BREAKING CHANGE:` in commit)
+- **MINOR:** New features (`feat`)
+- **PATCH:** Bug fixes and improvements (`fix`, `perf`, `refactor`)
+- **No Release:** `docs`, `style`, `test`, `chore`, `build`, `ci` do not trigger a release
 
 ## Pull request process
 

@@ -41,8 +41,9 @@
         "test": "jest",
         "build:cli": "tsc && chmod +x dist/cli.js",
         "package:cli": "npm run build:cli && npm pack",
-        "prepare": "npm run build",
-        "release": "semantic-release"
+        "prepare": "husky install",
+        "release": "semantic-release",
+        "commit": "cz"
     },
     "files": [
         "dist",
@@ -78,7 +79,12 @@
         "typescript-eslint": "^8.1.0",
         "semantic-release": "^22.0.0",
         "@semantic-release/changelog": "^6.0.3",
-        "@semantic-release/git": "^10.0.1"
+        "@semantic-release/git": "^10.0.1",
+        "commitizen": "^4.3.0",
+        "cz-conventional-changelog": "^3.3.0",
+        "husky": "^8.0.0",
+        "@commitlint/cli": "^18.0.0",
+        "@commitlint/config-conventional": "^18.0.0"
     },
     "publishConfig": {
         "access": "public"
@@ -93,5 +99,10 @@
             "@semantic-release/github",
             "@semantic-release/git"
         ]
+    },
+    "config": {
+        "commitizen": {
+            "path": "cz-conventional-changelog"
+        }
     }
 }
