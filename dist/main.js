@@ -302,7 +302,6 @@ async function main() {
     }
     const platform = createPlatform(platformType);
     try {
-        // Use typed object for config
         const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region']
             .reduce((acc, input) => ({
             ...acc,
@@ -322,10 +321,10 @@ async function main() {
         // Calculate the fingerprint of the public key
         const ociFingerprint = calcFingerprint(publicKey);
         // Get the B64 encoded public key DER
-        let publicKeyB64 = encodePublicKeyToBase64();
+        const publicKeyB64 = encodePublicKeyToBase64();
         platform.logger.debug(`Public Key B64: ${publicKeyB64}`);
         //Exchange platform OIDC token for OCI UPST
-        let upstToken = await tokenExchangeJwtToUpst(platform, {
+        const upstToken = await tokenExchangeJwtToUpst(platform, {
             tokenExchangeURL: `${config.domain_base_url}/oauth2/v1/token`,
             clientCred: Buffer.from(config.oidc_client_identifier).toString('base64'),
             ociPublicKey: publicKeyB64,

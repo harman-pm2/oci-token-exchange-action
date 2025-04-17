@@ -296,7 +296,7 @@ export async function main(): Promise<void> {
   }
   const platform: Platform= createPlatform(platformType);
   try {
-    // Use typed object for config
+  
     const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region']
       .reduce<Partial<ConfigInputs>>((acc, input) => ({
         ...acc,
