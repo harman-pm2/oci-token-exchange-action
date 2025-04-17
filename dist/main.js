@@ -115,21 +115,21 @@ async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, 
         // Do some basic validation on the JWT token that we are going to exchange
         try {
             const parts = subjectToken.split('.');
-            // Check if the token is already a valid JWT (has at least 2 periods)
-            if (parts.length == 3) {
-                // If not well-formed, it might be a raw JWT that needs to be formatted
-                platform.logger.debug(' OIDC token does not appear to be a properly formatted JWT, attempting to parse');
-            }
-            else {
+            // Check if the token has the standard 3-part JWT structure
+            if (parts.length === 3) {
                 // Try to parse the token segments to validate it's a proper(ish) JWT
                 // Note: This is a very basic check and does not guarantee the token's validity
                 const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
                 const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-                platform.logger.debug(`JWT appears structured as expected with a header , payload and signature . Issuer: ${payload.iss || 'unknown'}`);
+                platform.logger.debug(`JWT appears structured as expected (3 parts). Issuer: ${payload.iss}, kid: ${header.kid}`);
+            }
+            else {
+                // If not 3 parts, log a warning. It might be an opaque token or malformed.
+                platform.logger.debug(' OIDC token does not have the standard 3-part JWT structure.');
             }
         }
         catch (error) {
-            platform.logger.warning(`Error pre-processing OIDC token: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            platform.logger.warning(`Error during basic JWT structure check: ${error instanceof Error ? error.message : 'Unknown error'}`);
             // Continue with the original token, as we may be mistaken about its format
         }
     }
