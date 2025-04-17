@@ -29,16 +29,10 @@ jobs:
       with:
         oidc_client_identifier: ${{secrets.OIDC_CLIENT_IDENTIFIER}}
         domain_base_url: ${{vars.DOMAIN_BASE_URL}}
-
-    - name: Run OCI Token Exchange Action
-      uses: gtrevorrow/oci-token-exchange-action@multi-platform
-      with:
-        oidc_client_identifier: ${{secrets.OIDC_CLIENT_IDENTIFIER}}
-        domain_base_url: ${{vars.DOMAIN_BASE_URL}}
-        oci_tenancy: ${{vars.OCI_TENANCY}}
-        oci_region: ${{vars.OCI_REGION}}
-        retry_count: '7'
-        ci_platform: 'github'
+        oci_tenancy: ${{vars.OCI_TENANCY}} # Add this input
+        oci_region: ${{vars.OCI_REGION}}   # Add this input
+        # retry_count: '7' # Optional: Add if needed for testing
+        # ci_platform: 'github' # Optional: Add if needed for testing, defaults to github
 
     - name: Run OCI CLI Command
       run: oci --auth security_token os ns get
