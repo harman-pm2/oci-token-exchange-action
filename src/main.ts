@@ -77,8 +77,37 @@ function isValidUrl(url: string): boolean {
   }
 }
 
+/**
+ * Performs a basic structural validation of a JWT and logs debug information.
+ * @param platform The platform instance for logging.
+ * @param token The JWT token string.
+ */
+function validateAndLogJwtStructure(platform: Platform, token: string): void {
+  if (!platform.isDebug()) {
+    return; // Only run if debug mode is enabled
+  }
+
+  try {
+    const parts = token.split('.');
+    // Check if the token has the standard 3-part JWT structure
+    if (parts.length === 3) {
+      // Try to parse the token segments to validate it's a proper(ish) JWT
+      // Note: This is a very basic check and does not guarantee the token's validity
+      const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+      platform.logger.debug(`JWT appears structured as expected (3 parts). Issuer: ${payload.iss || 'unknown'}, kid: ${header.kid || 'unknown'}`);
+    } else {
+      // If not 3 parts, log a warning. It might be an opaque token or malformed.
+      platform.logger.debug(' OIDC token does not have the standard 3-part JWT structure.');
+    }
+  } catch (error) {
+    platform.logger.warning(`Error during basic JWT structure check: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // Continue, as the token might still be valid for exchange even if parsing failed here
+  }
+}
+
 // Function to exchange JWT for OCI UPST token
-export async  function tokenExchangeJwtToUpst(
+export async function tokenExchangeJwtToUpst(
   platform: Platform,
   {
     tokenExchangeURL,
@@ -94,26 +123,9 @@ export async  function tokenExchangeJwtToUpst(
     'Authorization': `Basic ${clientCred}`
   };
 
-  
-  if (subjectToken && platform.isDebug()) {
-    // Do some basic validation on the JWT token that we are going to exchange
-    try {
-      const parts = subjectToken.split('.');
-      // Check if the token has the standard 3-part JWT structure
-      if (parts.length === 3) {
-        // Try to parse the token segments to validate it's a proper(ish) JWT
-        // Note: This is a very basic check and does not guarantee the token's validity
-        const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
-        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-        platform.logger.debug(`JWT appears structured as expected (3 parts). Issuer: ${payload.iss}, kid: ${header.kid}`);
-      } else {
-        // If not 3 parts, log a warning. It might be an opaque token or malformed.
-        platform.logger.debug(' OIDC token does not have the standard 3-part JWT structure.');
-      }
-    } catch (error) {
-      platform.logger.warning(`Error during basic JWT structure check: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      // Continue with the original token, as we may be mistaken about its format
-    }
+  // Perform basic validation and logging if debug is enabled
+  if (subjectToken) {
+    validateAndLogJwtStructure(platform, subjectToken);
   }
 
   const data = {
