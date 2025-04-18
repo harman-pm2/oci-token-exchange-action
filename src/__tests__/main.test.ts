@@ -1,6 +1,5 @@
 import { jest, expect, describe, it, beforeEach, afterEach } from '@jest/globals';
 import * as fs from 'fs/promises';
-import * as path from 'path';
 import * as crypto from 'crypto';
 import { configureOciCli, OciConfig } from '../main';
 import { Platform, PlatformLogger } from '../platforms/types';

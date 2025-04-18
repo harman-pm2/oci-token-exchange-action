@@ -146,14 +146,15 @@ The project follows a structured process from development to production, using a
    - Once approved, a repository maintainer will merge the pull request to `main`.
 
 4. **Release Tagging:**
-   - After merging to `main`, a repository maintainer will manually create a tag to trigger the release process:
+   - After merging to `main`, a repository maintainer will manually create a tag starting with `release-` to trigger the release process:
      ```bash
      git checkout main
      git pull
-     git tag -a v0.1.0 -m "Initial release"  # Or appropriate version
-     git push origin v0.1.0
+     # Example: git tag -a release-v0.1.0 -m "Initial release"
+     git tag -a release-<version> -m "Release <version>"
+     git push origin release-<version>
      ```
-   - The GitHub workflow is triggered when a tag matching `v*` is pushed.
+   - The GitHub workflow is triggered when a tag matching `release-*` is pushed.
    - Once triggered, semantic-release will:
      - Analyze the commits since the last release
      - Determine the appropriate version number based on conventional commits

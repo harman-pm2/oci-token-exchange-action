@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'  # triggers on version tagged commits
+      - 'release-*'  # triggers on release tagged commits
 
 jobs:
   release:
