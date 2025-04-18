@@ -4,11 +4,12 @@ branding:
   color: red
   icon: cloud
 inputs:
-  client_id:  
-    description: 'client_id of OCI Domain Confidential Application'
-    required: true
-  client_secret:  
-    description: 'client_secret of OCI Domain Confidential Application'
+  ci_platform:
+    description: 'CI platform (github)'
+    required: false
+    default: 'github'
+  oidc_client_identifier:  
+    description: 'OIDC Client Identifier'
     required: true
   domain_base_url:  
     description: 'Base URL of OCI Domain that provides the token exchange endpoint'
@@ -19,9 +20,10 @@ inputs:
   oci_region:  
     description: 'OCI Region'
     required: true
-  test_token:
-    description: 'Test token to exchange'
+  retry_count: 
+    description: 'Number of times to retry the token exchange, default value of 0 means no retries'
     required: false
+    default: '0'
 runs:
   using: 'node20'
   main: 'dist/main.js'

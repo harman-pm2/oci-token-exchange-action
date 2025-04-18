@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'release-*'  # triggers on release tagged commits
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      # Needs write access to create releases, read packages, and write for discussions (for notes)
+      contents: 'write'
+      packages: 'read'
+      discussions: 'write'
+      # Pull requests permission is used to comment on PRs mentioned in release notes
+      pull-requests: 'write'
+      # Issues permission is used to comment on issues being closed in the release
+      issues: 'write'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Project
+        run: npm run build
+
+      - name: Run Semantic Release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

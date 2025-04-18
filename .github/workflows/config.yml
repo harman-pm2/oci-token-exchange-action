@@ -6,6 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
+        # Only need read access to repository contents and write for ID tokens
         contents: 'read'
         id-token: 'write'
     steps:
@@ -15,28 +16,24 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4.0.3
       with:
-        node-version: '22.8.0'
+        node-version: '20'
 
     - name: Install OCI CLI
       run: |
         curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash -s -- --accept-all-defaults
+        echo "$HOME/bin" >> $GITHUB_PATH
       shell: bash
 
     - name: Run OCI Token Exchange Action
-      uses: gtrevorrow/oci-token-exchange-action@main
+      uses: ./ # Use the action from the current checkout
       with:
-        client_id: ${{ secrets.CLIENT_ID }}
-        client_secret: ${{ secrets.CLIENT_SECRET }}
-        domain_base_url: ${{ vars.DOMAIN_BASE_URL }}
-        oci_user: ${{ secrets.OCI_USER }}
-        oci_tenancy: ${{ vars.OCI_TENANCY }}
-        oci_region: ${{ vars.OCI_REGION }} 
-        # test_token: ${{ secrets.ACCESS_TOKEN_TEST }}
+        oidc_client_identifier: ${{secrets.OIDC_CLIENT_IDENTIFIER}}
+        domain_base_url: ${{vars.DOMAIN_BASE_URL}}
+        oci_tenancy: ${{vars.OCI_TENANCY}} # Add this input
+        oci_region: ${{vars.OCI_REGION}}   # Add this input
+        # retry_count: '7' # Optional: Add if needed for testing
+        # ci_platform: 'github' # Optional: Add if needed for testing, defaults to github
 
-    - name: Debug - List OCI Config
-      run: cat ~/.oci/config
+    - name: Run OCI CLI Command
+      run: oci --auth security_token os ns get
 
-    - name: Run OCI CLI Command - os bucket create
-      run: |
-        /home/runner/bin/oci --auth security_token os bucket create --compartment-id ocid1.compartment.oc1..aaaaaaaa4cv4u7oyb6hiqdvlukft5exnxoe5p5rjky5utehcvw33zom5gd3q --name actionDemo1 --namespace-name idtvuzux7o75
-    

@@ -1,0 +1,90 @@
+image: node:20
+
+definitions:
+  steps:
+    - step:
+        name: Install OCI Tools
+        script:
+          - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
+          - bash install.sh --accept-all-defaults
+          - export PATH=$PATH:/root/bin
+
+pipelines:
+  default:
+    - step:
+        name: Setup OCI CLI with OIDC Token Exchange
+        oidc: true  # This enables OIDC for this step
+        script:
+          # Setup OCI CLI
+          - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
+          - bash install.sh --accept-all-defaults
+          - export PATH=$PATH:/root/bin
+          
+          # Clone the develop branch and build the token exchange CLI
+          - git clone -b develop https://github.com/gtrevorrow/oci-token-exchange-action.git || git clone https://github.com/gtrevorrow/oci-token-exchange-action.git
+          - cd oci-token-exchange-action
+          - npm ci
+          
+          # Build the CLI with explicit commands instead of relying on script
+          - npm run build:cli
+          - chmod +x dist/cli.js
+          
+          # Use the CLI for token exchange
+          - >
+            cd dist &&
+            export PLATFORM=bitbucket &&
+            export OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} &&
+            export DOMAIN_BASE_URL=${DOMAIN_BASE_URL} &&
+            export OCI_TENANCY=${OCI_TENANCY} &&
+            export OCI_REGION=${OCI_REGION} &&
+            export RETRY_COUNT=3
+          - node cli.js || exit 1
+          
+          # Return to workspace root and verify OCI CLI works with generated token
+          - cd ../..
+          - oci --auth security_token os ns get
+        artifacts:
+          - ".oci/**"
+          - "private_key.pem"
+          - "public_key.pem"
+          - "session"
+  
+  branches:
+    main:
+      - step:
+          name: Setup OCI CLI from GitHub Repository (Production)
+          oidc: true
+          script:
+            # Setup OCI CLI
+            - curl -LO https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
+            - bash install.sh --accept-all-defaults
+            - export PATH=$PATH:/root/bin
+            
+            # Clone main branch from GitHub and build CLI
+            - git clone --branch main https://github.com/gtrevorrow/oci-token-exchange-action.git
+            - cd oci-token-exchange-action
+            - npm ci
+            
+            # Build the CLI with explicit commands
+            - npm run build
+            - chmod +x dist/cli.js
+            
+            # Run the CLI
+            - >
+              cd dist &&
+              export PLATFORM=bitbucket &&
+              export OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} &&
+              export DOMAIN_BASE_URL=${DOMAIN_BASE_URL} &&
+              export OCI_TENANCY=${OCI_TENANCY} &&
+              export OCI_REGION=${OCI_REGION} &&
+              export RETRY_COUNT=3
+            - node cli.js || exit 1
+            
+            # Return to workspace root and verify OCI CLI works
+            - cd ../..
+            - oci os ns get
+          artifacts:
+            - ".oci/**"
+            - "private_key.pem"
+            - "public_key.pem"
+            - "session"
