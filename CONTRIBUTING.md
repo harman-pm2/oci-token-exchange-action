@@ -144,6 +144,7 @@ The project follows a structured process from development to production, using a
    - This PR represents a release candidate.
    - A repository maintainer will run final verification on the release candidate.
    - Once approved, a repository maintainer will merge the pull request to `main`.
+   - **Important:** Use either **"Create a merge commit"** or **"Rebase and merge"**. Do **NOT** use "Squash and merge", as this will prevent `semantic-release` from correctly determining the version and generating release notes.
 
 4. **Release Tagging:**
    - After merging to `main`, a repository maintainer will manually create a tag starting with `release-` to trigger the release process:
