@@ -147,21 +147,22 @@ The project follows a structured process from development to production, using a
    - **Important:** Use either **"Create a merge commit"** or **"Rebase and merge"**. Do **NOT** use "Squash and merge", as this will prevent `semantic-release` from correctly determining the version and generating release notes.
 
 4. **Release Tagging:**
-   - After merging to `main`, a repository maintainer will manually create a tag starting with `release-` to trigger the release process:
+   - After merging to `main`, a repository maintainer will manually create a tag starting with `release-` followed by a timestamp to trigger the release process. This tag *only* triggers the workflow; `semantic-release` will calculate and create the actual version tag (e.g., `v1.1.0`).
      ```bash
      git checkout main
      git pull
-     # Example: git tag -a release-v0.1.0 -m "Initial release"
-     git tag -a release-<version> -m "Release <version>"
-     git push origin release-<version>
+     # Create a timestamp-based tag like release-20250418103000
+     TIMESTAMP=$(date +%Y%m%d%H%M%S)
+     git tag -a release-${TIMESTAMP} -m "Triggering release workflow"
+     git push origin release-${TIMESTAMP}
      ```
-   - The GitHub workflow is triggered when a tag matching `release-*` is pushed.
-   - Once triggered, semantic-release will:
-     - Analyze the commits since the last release
-     - Determine the appropriate version number based on conventional commits
-     - Generate release notes automatically from commit messages
-     - Create a GitHub release with the determined version (independent of your manually created tag)
-     - Publish the package to npm (if configured)
+   - The GitHub workflow (`release.yml`) is triggered when a tag matching `release-*` is pushed.
+   - Once triggered, `semantic-release` will:
+     - Analyze the commits on `main` since the last actual version tag (e.g., `v1.0.0`).
+     - Determine the appropriate next version number based on conventional commits.
+     - Generate release notes automatically from commit messages.
+     - Create a GitHub release and a corresponding version tag (e.g., `v1.1.0`).
+     - Publish the package to npm with the calculated version.
 
 5. **Test Publishing:**  
    For test releases, use the `.github/workflows/test-publish.yml` workflow, which can be triggered manually from the Actions tab. Test packages are published to npm with a tag like `1.2.3-YYYYMMDD-beta`.
