@@ -39,3 +39,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Update latest tag # Add this step
+        run: |
+          git tag -f latest
+          git push --force origin latest
+        env:
+          # Use the same token semantic-release uses for authentication
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
