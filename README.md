@@ -32,8 +32,23 @@ A tool to exchange OIDC tokens for [OCI session tokens](https://docs.oracle.com/
 ## Installation
 
 ### As GitHub Action
+
+To use this tool as a step in your GitHub Actions workflow, reference it using a specific Git tag or branch. The following options are available, managed automatically by the release workflow:
+
+*   **`@vX` (e.g., `@v1`) - Recommended:** Points to the latest stable release within a specific major version (e.g., the latest `v1.x.y`). This tag is automatically updated upon new releases, allowing you to receive compatible updates and bug fixes without breaking changes.
+*   **`@vX.Y.Z` (e.g., `@v1.1.0`) - Specific Version:** Pins the action to an exact release version. Use this if you need absolute stability and want to control updates manually.
+*   **`@latest` - Latest Release:** Points to the commit of the most recent release published from the `main` branch. This tag is automatically updated upon new releases. Use with caution, as it might pull in breaking changes if a new major version has been released.
+*   **`@main` - Bleeding Edge (Not Recommended):** Runs the action directly from the latest commit on the `main` branch. This is unstable and should generally be avoided in production workflows.
+
 ```yaml
+# Recommended: Use the major version tag for automatic compatible updates
 - uses: gtrevorrow/oci-token-exchange-action@v1
+
+# Alternative: Pin to a specific version (e.g., v1.1.0)
+# - uses: gtrevorrow/oci-token-exchange-action@v1.1.0 
+
+# Alternative: Use the latest release (use with caution)
+# - uses: gtrevorrow/oci-token-exchange-action@latest
 ```
 
 ### As CLI Tool
@@ -57,7 +72,7 @@ npm install -g @gtrevorrow/oci-token-exchange@beta
 - uses: gtrevorrow/oci-token-exchange-action@v1
   with:
     oidc_client_identifier: ${{ secrets.OIDC_CLIENT_ID }}
-    domain_base_url: ${{ secrets.DOMAIN_URL }}
+    domain_base_url: ${{ vars.DOMAIN_BASE_URL }} # Use vars or secrets.DOMAIN_BASE_URL
     oci_tenancy: ${{ secrets.OCI_TENANCY }}
     oci_region: ${{ secrets.OCI_REGION }}
 ```
@@ -97,7 +112,7 @@ deploy:
       cd dist &&
       PLATFORM=gitlab \
       OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
-      DOMAIN_URL=${DOMAIN_URL} \
+      DOMAIN_BASE_URL=${DOMAIN_BASE_URL} \ # Changed from DOMAIN_URL
       OCI_TENANCY=${OCI_TENANCY} \
       OCI_REGION=${OCI_REGION} \
       RETRY_COUNT=3 \
@@ -143,7 +158,7 @@ deploy_npm:
     - |
       PLATFORM=gitlab \
       OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
-      DOMAIN_URL=${DOMAIN_URL} \
+      DOMAIN_BASE_URL=${DOMAIN_BASE_URL} \ # Changed from DOMAIN_URL
       OCI_TENANCY=${OCI_TENANCY} \
       OCI_REGION=${OCI_REGION} \
       RETRY_COUNT=3 \
@@ -193,7 +208,7 @@ pipelines:
             cd dist &&
             export PLATFORM=bitbucket &&
             export OIDC_CLIENT_ID=${OIDC_CLIENT_ID} &&
-            export DOMAIN_URL=${DOMAIN_URL} &&
+            export DOMAIN_BASE_URL=${DOMAIN_BASE_URL} && # Changed from DOMAIN_URL
             export OCI_TENANCY=${OCI_TENANCY} &&
             export OCI_REGION=${OCI_REGION} &&
             export RETRY_COUNT=3
@@ -236,7 +251,7 @@ pipelines:
           - >
             export PLATFORM=bitbucket &&
             export OIDC_CLIENT_ID=${OIDC_CLIENT_ID} &&
-            export DOMAIN_URL=${DOMAIN_URL} &&
+            export DOMAIN_BASE_URL=${DOMAIN_BASE_URL} && # Changed from DOMAIN_URL
             export OCI_TENANCY=${OCI_TENANCY} &&
             export OCI_REGION=${OCI_REGION} &&
             export RETRY_COUNT=3

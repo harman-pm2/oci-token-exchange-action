@@ -36,15 +36,42 @@ jobs:
         run: npm run build
 
       - name: Run Semantic Release
+        id: semantic # Add an ID to reference the output
         run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Update latest tag # Add this step
+      # Add steps to update major version tag
+      - name: Get released version
+        # Check if semantic-release step produced a new version
+        if: steps.semantic.outputs.new_release_published == 'true' 
         run: |
-          git tag -f latest
+          echo "RELEASE_VERSION=${{ steps.semantic.outputs.new_release_version }}" >> $GITHUB_ENV
+          echo "New version released: ${{ steps.semantic.outputs.new_release_version }}"
+
+      - name: Update Major Version Tag (e.g., v1)
+        if: env.RELEASE_VERSION # Only run if a new version was released
+        run: |
+          # Extract the major version number (e.g., "1" from "v1.2.3")
+          MAJOR_VERSION=$(echo $RELEASE_VERSION | sed -E 's/v([0-9]+)\..*/\1/')
+          MAJOR_TAG="v$MAJOR_VERSION"
+          echo "Updating tag $MAJOR_TAG to point to $RELEASE_VERSION"
+          # Create or update the major version tag locally, pointing to the same commit as the release version tag
+          git tag -f $MAJOR_TAG $RELEASE_VERSION 
+          # Force push the major version tag to the remote
+          git push --force origin $MAJOR_TAG
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update latest tag
+        # Only run if a new version was released (RELEASE_VERSION is set)
+        if: env.RELEASE_VERSION 
+        run: |
+          echo "Updating latest tag to point to $RELEASE_VERSION"
+          # Create or update the latest tag locally, pointing it to the same commit as the release version tag
+          git tag -f latest $RELEASE_VERSION 
+          # Force push the latest tag to the remote
           git push --force origin latest
         env:
-          # Use the same token semantic-release uses for authentication
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
