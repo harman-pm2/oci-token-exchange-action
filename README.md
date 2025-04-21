@@ -262,7 +262,7 @@ npm install -g @gtrevorrow/oci-token-exchange
 export LOCAL_OIDC_TOKEN="your.jwt.token"
 PLATFORM=local \
 OIDC_CLIENT_ID=your-client-id \
-DOMAIN_URL=https://your-domain.identity.oraclecloud.com \
+DOMAIN_BASE_URL=https://your-domain.identity.oraclecloud.com \ # Changed from DOMAIN_URL
 OCI_TENANCY=your-tenancy-ocid \
 OCI_REGION=your-region \
 oci-token-exchange
@@ -326,4 +326,4 @@ This action is licensed under the [Universal Permissive License v1.0 (UPL-1.0)](
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-````
+`````
