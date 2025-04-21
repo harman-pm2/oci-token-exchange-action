@@ -21,6 +21,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
+          ref: main # Explicitly check out the main branch
           fetch-depth: 0 # Ensure full history is fetched
 
       - name: Set up Node.js
