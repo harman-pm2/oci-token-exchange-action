@@ -29,13 +29,13 @@ jobs:
       with:
         oidc_client_identifier: ${{secrets.OIDC_CLIENT_IDENTIFIER}}
         domain_base_url: ${{vars.DOMAIN_BASE_URL}}
-        oci_tenancy: ${{vars.OCI_TENANCY}} # Add this input
-        oci_region: ${{vars.OCI_REGION}}   # Add this input
-        oci_home: ${{github.workspace}} # Optional
-
+        oci_tenancy: ${{vars.OCI_TENANCY}}
+        oci_region: ${{vars.OCI_REGION}}
+        oci_home: ${{ github.workspace }} # Optional
         # retry_count: '7' # Optional: Add if needed for testing
         # ci_platform: 'github' # Optional: Add if needed for testing, defaults to github
 
     - name: Run OCI CLI Command
-      run: oci --auth security_token os ns get
-
+      shell: bash
+      run: |
+        oci --auth instance_principal --config-file ${{  github.workspace }}/.oci/config os ns get
