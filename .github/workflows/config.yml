@@ -24,6 +24,12 @@ jobs:
         echo "$HOME/bin" >> $GITHUB_PATH
       shell: bash
 
+    - name: Install dependencies and build action
+      shell: bash
+      run: |
+        npm ci
+        npm run build
+
     - name: Run OCI Token Exchange Action
       uses: ./ # Use the action from the current checkout
       with:
@@ -31,7 +37,7 @@ jobs:
         domain_base_url: ${{vars.DOMAIN_BASE_URL}}
         oci_tenancy: ${{vars.OCI_TENANCY}}
         oci_region: ${{vars.OCI_REGION}}
-        oci_home: ${{ github.workspace }} # Optional
+        oci_home: ${{ github.workspace }}  # Use workflow workspace as oci_home input
         # retry_count: '7' # Optional: Add if needed for testing
         # ci_platform: 'github' # Optional: Add if needed for testing, defaults to github
 

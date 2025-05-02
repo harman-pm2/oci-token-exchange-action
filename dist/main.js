@@ -41,7 +41,7 @@ exports.tokenExchangeJwtToUpst = tokenExchangeJwtToUpst;
 exports.configureOciCli = configureOciCli;
 exports.main = main;
 /**
- * Copyright (c) 2021, 2024 Oracle and/or its affiliates.
+ * Copyright (c) 2021, 2025 Oracle and/or its affiliates.
  * Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
  */
 const fs = __importStar(require("fs/promises"));
@@ -105,33 +105,44 @@ function isValidUrl(url) {
         return false;
     }
 }
+/**
+ * Performs a basic structural validation of a JWT and logs debug information.
+ * @param platform The platform instance for logging.
+ * @param token The JWT token string.
+ */
+function validateAndLogJwtStructure(platform, token) {
+    if (!platform.isDebug()) {
+        return; // Only run if debug mode is enabled
+    }
+    try {
+        const parts = token.split('.');
+        // Check if the token has the standard 3-part JWT structure
+        if (parts.length === 3) {
+            // Try to parse the token segments to validate it's a proper(ish) JWT
+            // Note: This is a very basic check and does not guarantee the token's validity
+            const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+            platform.logger.debug(`JWT appears structured as expected (3 parts). Issuer: ${payload.iss || 'unknown'}, kid: ${header.kid || 'unknown'}`);
+        }
+        else {
+            // If not 3 parts, log a warning. It might be an opaque token or malformed.
+            platform.logger.debug(' OIDC token does not have the standard 3-part JWT structure.');
+        }
+    }
+    catch (error) {
+        platform.logger.warning(`Error during basic JWT structure check: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Continue, as the token might still be valid for exchange even if parsing failed here
+    }
+}
 // Function to exchange JWT for OCI UPST token
 async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, ociPublicKey, subjectToken, retryCount, currentAttempt = 0 }) {
     const headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${clientCred}`
     };
-    if (subjectToken && platform.isDebug()) {
-        // Do some basic validation on the JWT token that we are going to exchange
-        try {
-            const parts = subjectToken.split('.');
-            // Check if the token has the standard 3-part JWT structure
-            if (parts.length === 3) {
-                // Try to parse the token segments to validate it's a proper(ish) JWT
-                // Note: This is a very basic check and does not guarantee the token's validity
-                const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
-                const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-                platform.logger.debug(`JWT appears structured as expected (3 parts). Issuer: ${payload.iss}, kid: ${header.kid}`);
-            }
-            else {
-                // If not 3 parts, log a warning. It might be an opaque token or malformed.
-                platform.logger.debug(' OIDC token does not have the standard 3-part JWT structure.');
-            }
-        }
-        catch (error) {
-            platform.logger.warning(`Error during basic JWT structure check: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            // Continue with the original token, as we may be mistaken about its format
-        }
+    // Perform basic validation and logging if debug is enabled
+    if (subjectToken) {
+        validateAndLogJwtStructure(platform, subjectToken);
     }
     const data = {
         'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
@@ -175,7 +186,7 @@ async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, 
 // Update configureOciCli to accept platform as first parameter
 async function configureOciCli(platform, config) {
     try {
-        const home = process.env.HOME || '';
+        const home = config.ociHome || process.env.HOME || '';
         if (!home) {
             throw new types_1.TokenExchangeError('HOME environment variable is not defined');
         }
@@ -302,10 +313,10 @@ async function main() {
     }
     const platform = createPlatform(platformType);
     try {
-        const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region']
+        const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region', 'oci_home']
             .reduce((acc, input) => ({
             ...acc,
-            [input]: platform.getInput(input, true)
+            [input]: platform.getInput(input, input !== 'oci_home')
         }), {});
         const retryCount = parseInt(platform.getInput('retry_count', false) || '0');
         if (isNaN(retryCount) || retryCount < 0) {
@@ -334,6 +345,7 @@ async function main() {
         platform.logger.info(`OCI issued a Session Token `);
         //Setup the OCI cli/sdk on the CI platform runner with the UPST token
         const ociConfig = {
+            ociHome: config.oci_home,
             privateKey,
             publicKey,
             upstToken: upstToken.token,

@@ -34,6 +34,10 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GitHubPlatform = void 0;
+/**
+ * Copyright (c) 2021, 2025 Oracle and/or its affiliates.
+ * Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
+ */
 const core = __importStar(require("@actions/core"));
 class GitHubPlatform {
     constructor() {
