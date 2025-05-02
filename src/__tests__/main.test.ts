@@ -119,5 +119,12 @@ describe('main.ts', () => {
       expect(configCall[1]).toContain(`tenancy=${testConfig.ociTenancy}`);
       expect(configCall[1]).toContain(`region=${testConfig.ociRegion}`);
     });
+
+    it('should write to custom oci_home directory when provided', async () => {
+      // Provide custom ociHome in config
+      testConfig.ociHome = '/custom/home';
+      await configureOciCli(mockPlatform, testConfig);
+      expect(fs.mkdir).toHaveBeenCalledWith('/custom/home/.oci', { recursive: true });
+    });
   });
 });

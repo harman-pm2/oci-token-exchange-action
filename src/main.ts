@@ -169,7 +169,7 @@ export async function tokenExchangeJwtToUpst(
 // Update configureOciCli to accept platform as first parameter
 export async function configureOciCli(platform: Platform, config: OciConfig): Promise<void> {
   try {
-    const home: string = process.env.HOME || '';
+    const home: string = config.ociHome || process.env.HOME || '';
     if (!home) {
       throw new TokenExchangeError('HOME environment variable is not defined');
     }
@@ -309,10 +309,10 @@ export async function main(): Promise<void> {
   const platform: Platform= createPlatform(platformType);
   try {
   
-    const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region']
+    const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region', 'oci_home']
       .reduce<Partial<ConfigInputs>>((acc, input) => ({
         ...acc,
-        [input]: platform.getInput(input, true)
+        [input]: platform.getInput(input, input !== 'oci_home')
       }), {}) as ConfigInputs;
 
     const retryCount = parseInt(platform.getInput('retry_count', false) || '0');
@@ -349,6 +349,7 @@ export async function main(): Promise<void> {
 
     //Setup the OCI cli/sdk on the CI platform runner with the UPST token
     const ociConfig: OciConfig = {
+      ociHome: config.oci_home,
       privateKey,
       publicKey,
       upstToken: upstToken.token,

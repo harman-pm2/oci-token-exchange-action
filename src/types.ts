@@ -44,6 +44,11 @@ export interface TokenExchangeConfig {
  */
 export interface OciConfig {
   /**
+   * Custom home directory for OCI config. Defaults to $HOME if not set.
+   */
+  ociHome?: string;
+  
+  /**
    * Private key used for OCI authentication
    */
   privateKey: crypto.KeyObject;
@@ -82,6 +87,10 @@ export interface ConfigInputs {
   domain_base_url: string;
   oci_tenancy: string;
   oci_region: string;
+  /**
+   * Base folder for OCI config (.oci) directory. Defaults to $HOME.
+   */
+  oci_home?: string;
 }
 
 /**
