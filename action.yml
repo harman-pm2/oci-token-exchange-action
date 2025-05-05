@@ -23,6 +23,9 @@ inputs:
   oci_home:
     description: 'Base folder for OCI config (.oci) directory. Defaults to $HOME.'
     required: false
+  oci_profile:
+    description: 'Name of the OCI CLI profile to create. Defaults to DEFAULT.'
+    required: false
   retry_count: 
     description: 'Number of times to retry the token exchange, default value of 0 means no retries'
     required: false

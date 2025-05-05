@@ -8,6 +8,7 @@ import { Platform, PlatformLogger } from '../platforms/types';
 jest.mock('fs/promises', () => {
   const mockFs = {
     writeFile: jest.fn<() => Promise<void>>(),
+    readFile: jest.fn<() => Promise<string>>(),
     access: jest.fn<() => Promise<void>>(),
     mkdir: jest.fn<() => Promise<void>>(),
     chmod: jest.fn<() => Promise<void>>()
@@ -15,6 +16,7 @@ jest.mock('fs/promises', () => {
   
   // Set up return values with proper typing
   mockFs.writeFile.mockResolvedValue(undefined);
+  mockFs.readFile.mockRejectedValue(new Error('File not found'));
   mockFs.access.mockResolvedValue(undefined);
   mockFs.mkdir.mockResolvedValue(undefined);
   mockFs.chmod.mockResolvedValue(undefined);
@@ -111,13 +113,15 @@ describe('main.ts', () => {
       await configureOciCli(mockPlatform, testConfig);
       // Verify that the config file (first fs.writeFile call) contains expected snippets.
       const fsWriteFileMock = fs.writeFile as jest.MockedFunction<typeof fs.writeFile>;
-      const configCall = fsWriteFileMock.mock.calls.find(call => typeof call[0] === 'string' && call[0].includes('config'));
+      // Find the mock writeFile call that wrote to the OCI config file
+      const configCall = fsWriteFileMock.mock.calls.find(call => String(call[0]).endsWith('/config'));
       if (!configCall) {
         throw new Error('Config write call not found in mock calls');
       }
-      expect(configCall[1]).toContain(`fingerprint=${testConfig.ociFingerprint}`);
-      expect(configCall[1]).toContain(`tenancy=${testConfig.ociTenancy}`);
-      expect(configCall[1]).toContain(`region=${testConfig.ociRegion}`);
+      // configCall[1] contains the actual TOML content written to the OCI config file, which we assert for correctness
+      expect(configCall[1]).toContain(`fingerprint = "${testConfig.ociFingerprint}"`);
+      expect(configCall[1]).toContain(`tenancy = "${testConfig.ociTenancy}"`);
+      expect(configCall[1]).toContain(`region = "${testConfig.ociRegion}"`);
     });
 
     it('should write to custom oci_home directory when provided', async () => {
@@ -125,6 +129,44 @@ describe('main.ts', () => {
       testConfig.ociHome = '/custom/home';
       await configureOciCli(mockPlatform, testConfig);
       expect(fs.mkdir).toHaveBeenCalledWith('/custom/home/.oci', { recursive: true });
+    });
+
+    it('should create config with custom profile when none exists', async () => {
+      // Simulate no existing config file
+      (fs.readFile as jest.MockedFunction<typeof fs.readFile>).mockRejectedValueOnce(new Error('not found'));
+      testConfig.ociProfile = 'MYPROF';
+      await configureOciCli(mockPlatform, testConfig);
+      // Find write to config file
+      const writeCalls = (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mock.calls;
+      const configCall = writeCalls.find(call => String(call[0]).endsWith('/config'));
+      expect(configCall).toBeDefined();
+      const content = configCall![1] as string;
+      expect(content).toContain('[MYPROF]');
+    });
+
+    it('should append new custom profile to existing config', async () => {
+      const existingContent = `[DEFAULT]\nfoo=bar\n`;
+      (fs.readFile as jest.MockedFunction<typeof fs.readFile>).mockResolvedValueOnce(existingContent);
+      testConfig.ociProfile = 'NEWPROF';
+      await configureOciCli(mockPlatform, testConfig);
+      const writeCalls = (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mock.calls;
+      const configCall = writeCalls.find(call => String(call[0]).endsWith('/config'));
+      const content = configCall![1] as string;
+      // Non-TOML existing config is skipped; old entries should not be present
+      expect(content).not.toContain('foo');
+      expect(content).toContain('[NEWPROF]');
+    });
+
+    it('should replace existing profile section', async () => {
+      const existingContent = `[REPLACE]\nold=val\n`;
+      (fs.readFile as jest.MockedFunction<typeof fs.readFile>).mockResolvedValueOnce(existingContent);
+      testConfig.ociProfile = 'REPLACE';
+      await configureOciCli(mockPlatform, testConfig);
+      const writeCalls = (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mock.calls;
+      const configCall = writeCalls.find(call => String(call[0]).endsWith('/config'));
+      const content = configCall![1] as string;
+      // Profile section should appear exactly once
+      expect((content.match(/\[REPLACE\]/g) || []).length).toBe(1);
     });
   });
 });

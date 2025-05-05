@@ -41,6 +41,10 @@ export interface OciConfig {
      */
     ociHome?: string;
     /**
+     * Profile name header for OCI config. Defaults to 'DEFAULT'.
+     */
+    ociProfile?: string;
+    /**
      * Private key used for OCI authentication
      */
     privateKey: crypto.KeyObject;
@@ -77,6 +81,10 @@ export interface ConfigInputs {
      * Base folder for OCI config (.oci) directory. Defaults to $HOME.
      */
     oci_home?: string;
+    /**
+     * Name of the OCI CLI profile to create. Defaults to 'DEFAULT'.
+     */
+    oci_profile?: string;
 }
 /**
  * Response from token exchange operation

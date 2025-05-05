@@ -6,6 +6,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import crypto from 'crypto';
 import axios from 'axios';
+import * as TOML from '@iarna/toml';
 import { Platform, PlatformConfig } from './platforms/types';
 import { GitHubPlatform } from './platforms/github';
 import { CLIPlatform } from './platforms/cli';
@@ -116,7 +117,7 @@ export async function tokenExchangeJwtToUpst(
     subjectToken,
     retryCount,
     currentAttempt = 0
-  }: TokenExchangeConfig 
+  }: TokenExchangeConfig
 ): Promise<UpstTokenResponse> {
   const headers = {
     'Content-Type': 'application/x-www-form-urlencoded',
@@ -183,14 +184,19 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
 
     platform.logger.debug(`OCI Config Dir: ${ociConfigDir}`);
 
-    const ociConfig: string = `[DEFAULT]
-    user='not used'
-    fingerprint=${config.ociFingerprint}
-    key_file=${ociPrivateKeyFile}
-    tenancy=${config.ociTenancy}
-    region=${config.ociRegion}
-    security_token_file=${upstTokenFile}
-    `;
+    // Build config section for the given profile
+    const profileName = config.ociProfile || 'DEFAULT';
+    // Prepare profile object for TOML
+    const profileObject = {
+      user: 'not used',
+      fingerprint: config.ociFingerprint,
+      key_file: ociPrivateKeyFile,
+      tenancy: config.ociTenancy,
+      region: config.ociRegion,
+      security_token_file: upstTokenFile
+    };
+
+    platform.logger.debug(`Preparing OCI config for profile [${profileName}]`);
 
     try {
       await fs.mkdir(ociConfigDir, { recursive: true });
@@ -198,10 +204,7 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
       throw new Error('Unable to create OCI Config folder');
     }
 
-    platform.logger.debug(`Created OCI Config : ${ociConfig}`);
-
     try {
-      // Use await/try-catch for fs.access instead of chaining then/catch
       try {
         await fs.access(ociConfigFile);
         platform.logger.warning(`Overwriting existing config file at ${ociConfigFile}`);
@@ -222,15 +225,37 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
       if (!config.upstToken || typeof config.upstToken !== 'string') {
         throw new Error('Session token is undefined or invalid type');
       }
-      if (!ociConfig || typeof ociConfig !== 'string') {
+      if (!profileObject || typeof profileObject !== 'object') {
         throw new Error('OCI config is undefined or invalid type');
       }
 
       platform.logger.debug('Validated all file contents before writing');
 
+      // Read existing config file (if any)
+      let existingContent = '';
+      try {
+        existingContent = await fs.readFile(ociConfigFile, 'utf-8');
+      } catch {
+        existingContent = '';
+      }
+      // Prepare a fresh object to merge existing TOML data into, avoiding mutation of parsing result
+      const mergedConfig: Record<string, any> = {};
+      // Merge existing TOML; if parse fails, ignore and start fresh (overwrite)
+      if (existingContent) {
+        try {
+          Object.assign(mergedConfig, TOML.parse(existingContent));
+        } catch {
+          // Invalid TOML: skip merging and overwrite config entirely
+        }
+      }
+      // Set or replace the profile section
+      mergedConfig[profileName] = profileObject;
+      const finalConfigContent = TOML.stringify(mergedConfig);
+      await fs.writeFile(ociConfigFile, finalConfigContent);
+      platform.logger.debug(`Successfully updated OCI config at ${ociConfigFile}`);
+
+      // Write private key, public key, and session token
       await Promise.all([
-        fs.writeFile(ociConfigFile, ociConfig)
-          .then(() => platform.logger.debug(`Successfully wrote OCI config to ${ociConfigFile}`)),
         fs.writeFile(ociPrivateKeyFile, privateKeyPem)
           .then(() => fs.chmod(ociPrivateKeyFile, '600'))
           .then(() => platform.logger.debug(`Successfully wrote private key to ${ociPrivateKeyFile} with permissions 600`)),
@@ -306,13 +331,13 @@ export async function main(): Promise<void> {
   if (!PLATFORM_CONFIGS[platformType]) {
     throw new Error(`Unsupported platform: ${platformType}`);
   }
-  const platform: Platform= createPlatform(platformType);
+  const platform: Platform = createPlatform(platformType);
   try {
-  
-    const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region', 'oci_home']
+
+    const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region', 'oci_home', 'oci_profile']
       .reduce<Partial<ConfigInputs>>((acc, input) => ({
         ...acc,
-        [input]: platform.getInput(input, input !== 'oci_home')
+        [input]: platform.getInput(input, input !== 'oci_home' && input !== 'oci_profile')
       }), {}) as ConfigInputs;
 
     const retryCount = parseInt(platform.getInput('retry_count', false) || '0');
@@ -347,9 +372,12 @@ export async function main(): Promise<void> {
     });
     platform.logger.info(`OCI issued a Session Token `);
 
-    //Setup the OCI cli/sdk on the CI platform runner with the UPST token
+    // Resolve OCI home and profile, falling back to environment or defaults
+    const resolvedOciHome = config.oci_home || process.env.OCI_HOME;
+    const resolvedOciProfile = config.oci_profile || process.env.OCI_PROFILE || 'DEFAULT';
     const ociConfig: OciConfig = {
-      ociHome: config.oci_home,
+      ociHome: resolvedOciHome,
+      ociProfile: resolvedOciProfile,
       privateKey,
       publicKey,
       upstToken: upstToken.token,
