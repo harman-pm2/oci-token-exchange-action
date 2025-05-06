@@ -118,10 +118,16 @@ describe('main.ts', () => {
       if (!configCall) {
         throw new Error('Config write call not found in mock calls');
       }
-      // configCall[1] contains the actual TOML content written to the OCI config file, which we assert for correctness
-      expect(configCall[1]).toContain(`fingerprint = "${testConfig.ociFingerprint}"`);
-      expect(configCall[1]).toContain(`tenancy = "${testConfig.ociTenancy}"`);
-      expect(configCall[1]).toContain(`region = "${testConfig.ociRegion}"`);
+      const content = configCall[1] as string;
+      // Header is present
+      expect(content).toContain('[DEFAULT]');
+      // fingerprint, tenancy, region lines - accept either quoted or unquoted, with optional spaces
+      expect(content).toMatch(/fingerprint\s*=\s*"?test-fingerprint"?/);
+      expect(content).toMatch(/tenancy\s*=\s*"?test-tenancy"?/);
+      expect(content).toMatch(/region\s*=\s*"?test-region"?/);
+      // key_file and security_token_file lines
+      expect(content).toMatch(/key_file\s*=\s*"?\/mock\/home\/private_key\.pem"?/);
+      expect(content).toMatch(/security_token_file\s*=\s*"?\/mock\/home\/session"?/);
     });
 
     it('should write to custom oci_home directory when provided', async () => {
@@ -152,9 +158,10 @@ describe('main.ts', () => {
       const writeCalls = (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mock.calls;
       const configCall = writeCalls.find(call => String(call[0]).endsWith('/config'));
       const content = configCall![1] as string;
-      // Non-TOML existing config is skipped; old entries should not be present
-      expect(content).not.toContain('foo');
-      expect(content).toContain('[NEWPROF]');
+      // Existing entries should be preserved, and new profile appended
+      expect(content).toContain('foo=bar');
+      expect((content.match(/\[DEFAULT\]/g) || []).length).toBe(1);
+      expect((content.match(/\[NEWPROF\]/g) || []).length).toBe(1);
     });
 
     it('should replace existing profile section', async () => {
@@ -165,8 +172,9 @@ describe('main.ts', () => {
       const writeCalls = (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mock.calls;
       const configCall = writeCalls.find(call => String(call[0]).endsWith('/config'));
       const content = configCall![1] as string;
-      // Profile section should appear exactly once
+      // Profile header should appear exactly once and old values removed
       expect((content.match(/\[REPLACE\]/g) || []).length).toBe(1);
+      expect(content).not.toContain('old=val');
     });
   });
 });

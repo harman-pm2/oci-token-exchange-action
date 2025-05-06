@@ -6,7 +6,6 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import crypto from 'crypto';
 import axios from 'axios';
-import * as TOML from '@iarna/toml';
 import { Platform, PlatformConfig } from './platforms/types';
 import { GitHubPlatform } from './platforms/github';
 import { CLIPlatform } from './platforms/cli';
@@ -186,7 +185,7 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
 
     // Build config section for the given profile
     const profileName = config.ociProfile || 'DEFAULT';
-    // Prepare profile object for TOML
+    // Prepare profile object for INI
     const profileObject = {
       user: 'not used',
       fingerprint: config.ociFingerprint,
@@ -204,69 +203,58 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
       throw new Error('Unable to create OCI Config folder');
     }
 
+    // Export and validate keys first
+    const privateKeyPem = config.privateKey.export({ type: 'pkcs1', format: 'pem' });
+    const publicKeyPem = config.publicKey.export({ type: 'spki', format: 'pem' });
+
+    if (!privateKeyPem || typeof privateKeyPem !== 'string') {
+      throw new Error('Private key export failed or invalid type');
+    }
+    if (!publicKeyPem || typeof publicKeyPem !== 'string') {
+      throw new Error('Public key export failed or invalid type');
+    }
+    if (!config.upstToken || typeof config.upstToken !== 'string') {
+      throw new Error('Session token is undefined or invalid type');
+    }
+    if (!profileObject || typeof profileObject !== 'object') {
+      throw new Error('OCI config is undefined or invalid type');
+    }
+
+    platform.logger.debug('Validated all file contents before writing');
+    // Merge existing config and write new content atomically
     try {
-      try {
-        await fs.access(ociConfigFile);
-        platform.logger.warning(`Overwriting existing config file at ${ociConfigFile}`);
-      } catch (e) {
-        // File does not exist, proceed silently
-      }
-
-      // Export and validate keys first
-      const privateKeyPem = config.privateKey.export({ type: 'pkcs1', format: 'pem' });
-      const publicKeyPem = config.publicKey.export({ type: 'spki', format: 'pem' });
-
-      if (!privateKeyPem || typeof privateKeyPem !== 'string') {
-        throw new Error('Private key export failed or invalid type');
-      }
-      if (!publicKeyPem || typeof publicKeyPem !== 'string') {
-        throw new Error('Public key export failed or invalid type');
-      }
-      if (!config.upstToken || typeof config.upstToken !== 'string') {
-        throw new Error('Session token is undefined or invalid type');
-      }
-      if (!profileObject || typeof profileObject !== 'object') {
-        throw new Error('OCI config is undefined or invalid type');
-      }
-
-      platform.logger.debug('Validated all file contents before writing');
-
-      // Read existing config file (if any)
-      let existingContent = '';
-      try {
-        existingContent = await fs.readFile(ociConfigFile, 'utf-8');
-      } catch {
-        existingContent = '';
-      }
-      // Prepare a fresh object to merge existing TOML data into, avoiding mutation of parsing result
-      const mergedConfig: Record<string, any> = {};
-      // Merge existing TOML; if parse fails, ignore and start fresh (overwrite)
-      if (existingContent) {
-        try {
-          Object.assign(mergedConfig, TOML.parse(existingContent));
-        } catch {
-          // Invalid TOML: skip merging and overwrite config entirely
+      // Read and filter existing file lines, removing old profile section
+      const existingRaw = await fs.readFile(ociConfigFile, 'utf-8').catch(() => '');
+      const lines = existingRaw.split('\n');
+      const filtered: string[] = [];
+      let skip = false;
+      for (const line of lines) {
+        if (line.trim() === `[${profileName}]`) {
+          skip = true;
+          continue;
+        }
+        if (skip && line.startsWith('[')) {
+          skip = false;
+        }
+        if (!skip && line.trim() !== '') {
+          filtered.push(line);
         }
       }
-      // Set or replace the profile section
-      mergedConfig[profileName] = profileObject;
-      const finalConfigContent = TOML.stringify(mergedConfig);
-      await fs.writeFile(ociConfigFile, finalConfigContent);
-      platform.logger.debug(`Successfully updated OCI config at ${ociConfigFile}`);
-
-      // Write private key, public key, and session token
+      const merged = filtered.length ? filtered.join('\n') + '\n' : '';
+      // Compose new content with the new profile section
+      const newSection = `[${profileName}]\n` +
+        Object.entries(profileObject).map(([k, v]) => `${k}=${v}`).join('\n') + '\n';
+      const finalContent = merged + newSection;
+      // Write config, private key, public key, and session token
+      await fs.writeFile(ociConfigFile, finalContent);
+      platform.logger.debug(`Successfully wrote OCI config at ${ociConfigFile}`);
       await Promise.all([
-        fs.writeFile(ociPrivateKeyFile, privateKeyPem)
-          .then(() => fs.chmod(ociPrivateKeyFile, '600'))
-          .then(() => platform.logger.debug(`Successfully wrote private key to ${ociPrivateKeyFile} with permissions 600`)),
-        fs.writeFile(ociPublicKeyFile, publicKeyPem)
-          .then(() => platform.logger.debug(`Successfully wrote public key to ${ociPublicKeyFile}`)),
-        fs.writeFile(upstTokenFile, config.upstToken)
-          .then(() => fs.chmod(upstTokenFile, '600'))
-          .then(() => platform.logger.debug(`Successfully wrote session token to ${upstTokenFile}`))
+        fs.writeFile(ociPrivateKeyFile, privateKeyPem).then(() => fs.chmod(ociPrivateKeyFile, '600')),
+        fs.writeFile(ociPublicKeyFile, publicKeyPem),
+        fs.writeFile(upstTokenFile, config.upstToken).then(() => fs.chmod(upstTokenFile, '600'))
       ]);
-    } catch (error) {
-      throw new TokenExchangeError('Failed to write OCI configuration files', error);
+    } catch (err) {
+      throw new TokenExchangeError('Failed to write OCI configuration files', err instanceof Error ? err : undefined);
     }
   } catch (error) {
     platform.setFailed(`Failed to configure OCI CLI: ${error}`);
