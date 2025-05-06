@@ -233,6 +233,13 @@ async function configureOciCli(platform, config) {
         const ociConfigFile = path.resolve(path.join(ociConfigDir, 'config'));
         // Create a subfolder per profile to store keys and token
         const profileName = config.ociProfile || 'DEFAULT';
+        // Ensure required OCI parameters are provided
+        if (!config.ociTenancy) {
+            throw new types_1.TokenExchangeError('OCI tenancy is not defined');
+        }
+        if (!config.ociRegion) {
+            throw new types_1.TokenExchangeError('OCI region is not defined');
+        }
         // Create a subfolder per profile to store keys and token
         const profileDir = path.resolve(path.join(ociConfigDir, profileName));
         const ociPrivateKeyFile = path.resolve(path.join(profileDir, 'private_key.pem'));
