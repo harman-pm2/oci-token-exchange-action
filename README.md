@@ -75,6 +75,8 @@ npm install -g @gtrevorrow/oci-token-exchange@beta
     domain_base_url: ${{ vars.DOMAIN_BASE_URL }} # Use vars or secrets.DOMAIN_BASE_URL
     oci_tenancy: ${{ secrets.OCI_TENANCY }}
     oci_region: ${{ secrets.OCI_REGION }}
+    # Optional: Custom base folder for OCI config (.oci) directory
+    oci_home: ${{ secrets.OCI_HOME }}
 ```
 
 ### GitLab CI
@@ -275,6 +277,8 @@ npm install -g @gtrevorrow/oci-token-exchange
 
 # Run with required environment variables
 export LOCAL_OIDC_TOKEN="your.jwt.token"
+# Optional: set custom OCI config home
+export OCI_HOME="/custom/home"
 PLATFORM=local \
 OIDC_CLIENT_ID=your-client-id \
 DOMAIN_BASE_URL=https://your-domain.identity.oraclecloud.com \ # Changed from DOMAIN_URL
@@ -312,6 +316,7 @@ The action supports flexible environment variable naming to make it easier to us
 | `CI_JOB_JWT_V2` | - | GitLab CI JWT token | Yes, when platform=gitlab |
 | `BITBUCKET_STEP_OIDC_TOKEN` | - | Bitbucket OIDC token | Yes, when platform=bitbucket |
 | `DEBUG` | - | Enable debug output | No (default: `false`) |
+| `OCI_HOME` | `INPUT_OCI_HOME` | Base folder for OCI config (.oci) directory | No |
 
 ### Environment Variable Handling
 

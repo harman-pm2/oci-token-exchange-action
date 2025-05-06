@@ -57,6 +57,27 @@ describe('CLIPlatform', () => {
     it('should throw error when required variable is not found', () => {
       expect(() => platform.getInput('required_input', true)).toThrow('Input required and not supplied: required_input');
     });
+
+    // Tests for oci_home input handling
+    it('should retrieve value from OCI_HOME environment variable', () => {
+      process.env.OCI_HOME = '/custom/home';
+      expect(platform.getInput('oci_home')).toBe('/custom/home');
+    });
+
+    it('should retrieve value from INPUT_OCI_HOME prefixed variable', () => {
+      process.env.INPUT_OCI_HOME = '/input/home';
+      expect(platform.getInput('oci_home')).toBe('/input/home');
+    });
+
+    it('should prioritize OCI_HOME over INPUT_OCI_HOME', () => {
+      process.env.OCI_HOME = '/direct';
+      process.env.INPUT_OCI_HOME = '/input';
+      expect(platform.getInput('oci_home')).toBe('/direct');
+    });
+
+    it('should throw error when oci_home is required and not supplied', () => {
+      expect(() => platform.getInput('oci_home', true)).toThrow('Input required and not supplied: oci_home');
+    });
   });
 
   describe('getOIDCToken', () => {
