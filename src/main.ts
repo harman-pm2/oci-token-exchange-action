@@ -177,14 +177,16 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
     // Sanitize file paths to prevent path injection
     const ociConfigDir: string = path.resolve(path.join(home, '.oci'));
     const ociConfigFile: string = path.resolve(path.join(ociConfigDir, 'config'));
-    const ociPrivateKeyFile: string = path.resolve(path.join(home, 'private_key.pem'));
-    const ociPublicKeyFile: string = path.resolve(path.join(home, 'public_key.pem'));
-    const upstTokenFile: string = path.resolve(path.join(home, 'session'));
+    // Create a subfolder per profile to store keys and token
+    const profileName = config.ociProfile || 'DEFAULT';
+    // Create a subfolder per profile to store keys and token
+    const profileDir: string = path.resolve(path.join(ociConfigDir, profileName));
+    const ociPrivateKeyFile: string = path.resolve(path.join(profileDir, 'private_key.pem'));
+    const ociPublicKeyFile: string = path.resolve(path.join(profileDir, 'public_key.pem'));
+    const upstTokenFile: string = path.resolve(path.join(profileDir, 'session'));
 
     platform.logger.debug(`OCI Config Dir: ${ociConfigDir}`);
 
-    // Build config section for the given profile
-    const profileName = config.ociProfile || 'DEFAULT';
     // Prepare profile object for INI
     const profileObject = {
       user: 'not used',
@@ -199,6 +201,8 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
 
     try {
       await fs.mkdir(ociConfigDir, { recursive: true });
+      // Also ensure directory for this profile exists
+      await fs.mkdir(profileDir, { recursive: true });
     } catch (error) {
       throw new Error('Unable to create OCI Config folder');
     }
@@ -247,7 +251,9 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
       const finalContent = merged + newSection;
       // Write config, private key, public key, and session token
       await fs.writeFile(ociConfigFile, finalContent);
-      platform.logger.debug(`Successfully wrote OCI config at ${ociConfigFile}`);
+      // Secure the config file with owner-only permissions
+      await fs.chmod(ociConfigFile, '600');
+      platform.logger.debug(`Set permissions 600 on OCI config file ${ociConfigFile}`);
       await Promise.all([
         fs.writeFile(ociPrivateKeyFile, privateKeyPem).then(() => fs.chmod(ociPrivateKeyFile, '600')),
         fs.writeFile(ociPublicKeyFile, publicKeyPem),
