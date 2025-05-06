@@ -39,4 +39,4 @@ jobs:
     - name: Run OCI CLI Command
       shell: bash
       run: |
-        oci --auth security_token --config-file ${{ github.workspace }}/.oci/config os ns get
+        oci --auth security_token --profile GORDON --config-file ${{ github.workspace }}/.oci/config os ns get
