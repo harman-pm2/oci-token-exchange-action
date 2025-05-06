@@ -125,9 +125,9 @@ describe('main.ts', () => {
       expect(content).toMatch(/fingerprint\s*=\s*"?test-fingerprint"?/);
       expect(content).toMatch(/tenancy\s*=\s*"?test-tenancy"?/);
       expect(content).toMatch(/region\s*=\s*"?test-region"?/);
-      // key_file and security_token_file lines
-      expect(content).toMatch(/key_file\s*=\s*"?\/mock\/home\/private_key\.pem"?/);
-      expect(content).toMatch(/security_token_file\s*=\s*"?\/mock\/home\/session"?/);
+      // key_file and security_token_file lines now point to .oci/DEFAULT
+      expect(content).toMatch(/key_file\s*=\s*"?\/mock\/home\/.oci\/DEFAULT\/private_key\.pem"?/);
+      expect(content).toMatch(/security_token_file\s*=\s*"?\/mock\/home\/.oci\/DEFAULT\/session"?/);
     });
 
     it('should write to custom oci_home directory when provided', async () => {
@@ -175,6 +175,65 @@ describe('main.ts', () => {
       // Profile header should appear exactly once and old values removed
       expect((content.match(/\[REPLACE\]/g) || []).length).toBe(1);
       expect(content).not.toContain('old=val');
+    });
+
+    it('should write profile-specific key and session files under .oci/<profile>', async () => {
+      // Use default profile
+      await configureOciCli(mockPlatform, testConfig);
+      // Should create main .oci dir and DEFAULT subdir
+      expect(fs.mkdir).toHaveBeenCalledWith(expect.stringContaining('/mock/home/.oci'), { recursive: true });
+      expect(fs.mkdir).toHaveBeenCalledWith(expect.stringContaining('/mock/home/.oci/DEFAULT'), { recursive: true });
+      // Verify writeFile calls for credential files
+      const writeCalls = (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mock.calls;
+      // config file path
+      expect(writeCalls[0][0]).toMatch(/\/mock\/home\/\.oci\/config$/);
+      // private key path
+      expect(writeCalls).toEqual(
+        expect.arrayContaining([
+          expect.arrayContaining([expect.stringMatching(/\.oci\/DEFAULT\/private_key\.pem$/)])
+        ])
+      );
+      // public key path
+      expect(writeCalls).toEqual(
+        expect.arrayContaining([
+          expect.arrayContaining([expect.stringMatching(/\.oci\/DEFAULT\/public_key\.pem$/)])
+        ])
+      );
+      // session token path
+      expect(writeCalls).toEqual(
+        expect.arrayContaining([
+          expect.arrayContaining([expect.stringMatching(/\.oci\/DEFAULT\/session$/)])
+        ])
+      );
+    });
+
+    it('should write files under profile-specific folder when custom profile is provided', async () => {
+      // Provide a custom profile
+      testConfig.ociProfile = 'GORDON';
+      await configureOciCli(mockPlatform, testConfig);
+      // Should create GORDON subdir
+      expect(fs.mkdir).toHaveBeenCalledWith(expect.stringContaining('/mock/home/.oci/GORDON'), { recursive: true });
+      const writeCalls = (fs.writeFile as jest.MockedFunction<typeof fs.writeFile>).mock.calls;
+      // config file path always top-level
+      expect(writeCalls[0][0]).toMatch(/\/mock\/home\/\.oci\/config$/);
+      // private key path points into GORDON folder
+      expect(writeCalls).toEqual(
+        expect.arrayContaining([
+          expect.arrayContaining([expect.stringMatching(/\.oci\/GORDON\/private_key\.pem$/)])
+        ])
+      );
+      // public key path
+      expect(writeCalls).toEqual(
+        expect.arrayContaining([
+          expect.arrayContaining([expect.stringMatching(/\.oci\/GORDON\/public_key\.pem$/)])
+        ])
+      );
+      // session token path
+      expect(writeCalls).toEqual(
+        expect.arrayContaining([
+          expect.arrayContaining([expect.stringMatching(/\.oci\/GORDON\/session$/)])
+        ])
+      );
     });
   });
 });

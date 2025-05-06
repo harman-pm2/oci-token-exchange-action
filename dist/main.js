@@ -193,12 +193,14 @@ async function configureOciCli(platform, config) {
         // Sanitize file paths to prevent path injection
         const ociConfigDir = path.resolve(path.join(home, '.oci'));
         const ociConfigFile = path.resolve(path.join(ociConfigDir, 'config'));
-        const ociPrivateKeyFile = path.resolve(path.join(home, 'private_key.pem'));
-        const ociPublicKeyFile = path.resolve(path.join(home, 'public_key.pem'));
-        const upstTokenFile = path.resolve(path.join(home, 'session'));
-        platform.logger.debug(`OCI Config Dir: ${ociConfigDir}`);
-        // Build config section for the given profile
+        // Create a subfolder per profile to store keys and token
         const profileName = config.ociProfile || 'DEFAULT';
+        // Create a subfolder per profile to store keys and token
+        const profileDir = path.resolve(path.join(ociConfigDir, profileName));
+        const ociPrivateKeyFile = path.resolve(path.join(profileDir, 'private_key.pem'));
+        const ociPublicKeyFile = path.resolve(path.join(profileDir, 'public_key.pem'));
+        const upstTokenFile = path.resolve(path.join(profileDir, 'session'));
+        platform.logger.debug(`OCI Config Dir: ${ociConfigDir}`);
         // Prepare profile object for INI
         const profileObject = {
             user: 'not used',
@@ -211,6 +213,8 @@ async function configureOciCli(platform, config) {
         platform.logger.debug(`Preparing OCI config for profile [${profileName}]`);
         try {
             await fs.mkdir(ociConfigDir, { recursive: true });
+            // Also ensure directory for this profile exists
+            await fs.mkdir(profileDir, { recursive: true });
         }
         catch (error) {
             throw new Error('Unable to create OCI Config folder');
