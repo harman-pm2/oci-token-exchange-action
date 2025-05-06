@@ -204,7 +204,7 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
       // Also ensure directory for this profile exists
       await fs.mkdir(profileDir, { recursive: true });
     } catch (error) {
-      throw new Error('Unable to create OCI Config folder');
+      throw new TokenExchangeError('Failed to create OCI Config folder', error);
     }
 
     // Export and validate keys first

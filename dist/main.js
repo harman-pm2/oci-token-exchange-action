@@ -217,7 +217,7 @@ async function configureOciCli(platform, config) {
             await fs.mkdir(profileDir, { recursive: true });
         }
         catch (error) {
-            throw new Error('Unable to create OCI Config folder');
+            throw new types_1.TokenExchangeError('Failed to create OCI Config folder', error);
         }
         // Export and validate keys first
         const privateKeyPem = config.privateKey.export({ type: 'pkcs1', format: 'pem' });

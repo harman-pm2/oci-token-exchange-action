@@ -100,7 +100,7 @@ describe('main.ts', () => {
     it('should handle directory creation failure', async () => {
       const mkdirMock = fs.mkdir as jest.MockedFunction<typeof fs.mkdir>;
       mkdirMock.mockRejectedValueOnce(new Error('Permission denied'));
-      await expect(configureOciCli(mockPlatform, testConfig)).rejects.toThrow('Unable to create OCI Config folder');
+      await expect(configureOciCli(mockPlatform, testConfig)).rejects.toThrow('Failed to create OCI Config folder');
     });
 
     it('should handle file write errors', async () => {
