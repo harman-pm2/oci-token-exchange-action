@@ -261,7 +261,9 @@ async function configureOciCli(platform, config) {
             const finalContent = merged + newSection;
             // Write config, private key, public key, and session token
             await fs.writeFile(ociConfigFile, finalContent);
-            platform.logger.debug(`Successfully wrote OCI config at ${ociConfigFile}`);
+            // Secure the config file with owner-only permissions
+            await fs.chmod(ociConfigFile, '600');
+            platform.logger.debug(`Set permissions 600 on OCI config file ${ociConfigFile}`);
             await Promise.all([
                 fs.writeFile(ociPrivateKeyFile, privateKeyPem).then(() => fs.chmod(ociPrivateKeyFile, '600')),
                 fs.writeFile(ociPublicKeyFile, publicKeyPem),
