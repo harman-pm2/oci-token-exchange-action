@@ -32,11 +32,29 @@ jobs:
         oci_tenancy: ${{vars.OCI_TENANCY}}
         oci_region: ${{vars.OCI_REGION}}
         oci_home: ${{ github.workspace }} # Optional
-        oci_profile: 'GORDON' # Optional: Add if needed for testing
+      
         # retry_count: '7' # Optional: Add if needed for testing
         # ci_platform: 'github' # Optional: Add if needed for testing, defaults to github
 
     - name: Run OCI CLI Command
       shell: bash
       run: |
+        oci --auth security_token --config-file ${{ github.workspace }}/.oci/config os ns get
+
+    - name: Run OCI Token Exchange Action again
+      uses: ./ # Use the action from the current checkout
+      with:
+        oidc_client_identifier: ${{secrets.OIDC_CLIENT_IDENTIFIER}}
+        domain_base_url: ${{vars.DOMAIN_BASE_URL}}
+        oci_tenancy: ${{vars.OCI_TENANCY}}
+        oci_region: ${{vars.OCI_REGION}}
+        oci_home: ${{ github.workspace }} # Optional
+        oci_profile: 'GORDON' # Optional: Add if needed for testing
+        # retry_count: '7' # Optional: Add if needed for testing
+        # ci_platform: 'github' # Optional: Add if needed for testing, defaults to github
+  
+    - name: Run OCI CLI Command again
+      shell: bash
+      run: |
         oci --auth security_token --profile GORDON --config-file ${{ github.workspace }}/.oci/config os ns get
+  
