@@ -167,6 +167,56 @@ export async function tokenExchangeJwtToUpst(
 }
 
 // Update configureOciCli to accept platform as first parameter
+// Add helpers for config merging and file writes
+
+/**
+ * Merge existing OCI config content by removing old profile section
+ * and appending a new profile block.
+ */
+function mergeOciConfig(
+  existingRaw: string,
+  profileName: string,
+  profileObject: Record<string, string>
+): string {
+  const lines = existingRaw.split('\n');
+  const filtered: string[] = [];
+  let skip = false;
+  for (const line of lines) {
+    if (line.trim() === `[${profileName}]`) {
+      skip = true;
+      continue;
+    }
+    if (skip && line.startsWith('[')) {
+      skip = false;
+    }
+    if (!skip && line.trim() !== '') {
+      filtered.push(line);
+    }
+  }
+  const merged = filtered.length ? filtered.join('\n') + '\n' : '';
+  const newSection =
+    `[${profileName}]\n` +
+    Object.entries(profileObject)
+      .map(([k, v]) => `${k}=${v}`)
+      .join('\n') +
+    '\n';
+  return merged + newSection;
+}
+
+/**
+ * Write data to a file and optionally set file permissions.
+ */
+async function writeAndChmod(
+  filePath: string,
+  data: string,
+  perms?: string
+): Promise<void> {
+  await fs.writeFile(filePath, data);
+  if (perms) {
+    await fs.chmod(filePath, perms);
+  }
+}
+
 export async function configureOciCli(platform: Platform, config: OciConfig): Promise<void> {
   try {
     const home: string = config.ociHome || process.env.HOME || '';
@@ -225,42 +275,22 @@ export async function configureOciCli(platform: Platform, config: OciConfig): Pr
     }
 
     platform.logger.debug('Validated all file contents before writing');
-    // Merge existing config and write new content atomically
+    // Build and write all files using helpers
     try {
-      // Read and filter existing file lines, removing old profile section
       const existingRaw = await fs.readFile(ociConfigFile, 'utf-8').catch(() => '');
-      const lines = existingRaw.split('\n');
-      const filtered: string[] = [];
-      let skip = false;
-      for (const line of lines) {
-        if (line.trim() === `[${profileName}]`) {
-          skip = true;
-          continue;
-        }
-        if (skip && line.startsWith('[')) {
-          skip = false;
-        }
-        if (!skip && line.trim() !== '') {
-          filtered.push(line);
-        }
-      }
-      const merged = filtered.length ? filtered.join('\n') + '\n' : '';
-      // Compose new content with the new profile section
-      const newSection = `[${profileName}]\n` +
-        Object.entries(profileObject).map(([k, v]) => `${k}=${v}`).join('\n') + '\n';
-      const finalContent = merged + newSection;
-      // Write config, private key, public key, and session token
-      await fs.writeFile(ociConfigFile, finalContent);
-      // Secure the config file with owner-only permissions
-      await fs.chmod(ociConfigFile, '600');
+      const finalContent = mergeOciConfig(existingRaw, profileName, profileObject);
+      // Write config with secure permissions
+      await writeAndChmod(ociConfigFile, finalContent, '600');
       platform.logger.debug(`Set permissions 600 on OCI config file ${ociConfigFile}`);
-      await Promise.all([
-        fs.writeFile(ociPrivateKeyFile, privateKeyPem).then(() => fs.chmod(ociPrivateKeyFile, '600')),
-        fs.writeFile(ociPublicKeyFile, publicKeyPem),
-        fs.writeFile(upstTokenFile, config.upstToken).then(() => fs.chmod(upstTokenFile, '600'))
-      ]);
+      // Write keys and token
+      await writeAndChmod(ociPrivateKeyFile, privateKeyPem, '600');
+      await writeAndChmod(ociPublicKeyFile, publicKeyPem);
+      await writeAndChmod(upstTokenFile, config.upstToken, '600');
     } catch (err) {
-      throw new TokenExchangeError('Failed to write OCI configuration files', err instanceof Error ? err : undefined);
+      throw new TokenExchangeError(
+        'Failed to write OCI configuration files',
+        err instanceof Error ? err : undefined
+      );
     }
   } catch (error) {
     platform.setFailed(`Failed to configure OCI CLI: ${error}`);
