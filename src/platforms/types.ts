@@ -22,3 +22,16 @@ export interface PlatformConfig {
   tokenEnvVar?: string;
   audience: string;
 }
+
+/**
+ * Resolve an input name from various environment variable conventions.
+ */
+export function resolveInput(name: string): string {
+  return (
+    process.env[name.toUpperCase()] ||
+    process.env[`INPUT_${name.toUpperCase()}`] ||
+    process.env[`OCI_${name.toUpperCase()}`] ||
+    process.env[`OIDC_${name.toUpperCase()}`] ||
+    ''
+  );
+}

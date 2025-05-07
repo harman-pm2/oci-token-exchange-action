@@ -183,8 +183,6 @@ async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, 
         }
     }
 }
-// Update configureOciCli to accept platform as first parameter
-// Add helpers for config merging and file writes
 /**
  * Merge existing OCI config content by removing old profile section
  * and appending a new profile block.

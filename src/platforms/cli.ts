@@ -2,7 +2,7 @@
  * Copyright (c) 2021, 2025 Oracle and/or its affiliates.
  * Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
  */
-import { Platform, PlatformLogger, PlatformConfig } from './types';
+import { Platform, PlatformLogger, PlatformConfig, resolveInput } from './types';
 
 export class CLIPlatform implements Platform {
   private readonly _logger: PlatformLogger = {
@@ -15,14 +15,7 @@ export class CLIPlatform implements Platform {
   constructor(private config: PlatformConfig) {}
 
   getInput(name: string, required = false): string {
-
-  
-    // Then check for direct environment variable (using common naming conventions)
-    const value = process.env[name.toUpperCase()] || 
-                          process.env[`INPUT_${name.toUpperCase()}`] ||
-                         process.env[`OCI_${name.toUpperCase()}`] || 
-                         process.env[`OIDC_${name.toUpperCase()}`] || '';
-    
+    const value = resolveInput(name);
     if (required && !value) {
       throw new Error(`Input required and not supplied: ${name}`);
     }

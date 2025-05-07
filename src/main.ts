@@ -166,9 +166,6 @@ export async function tokenExchangeJwtToUpst(
   }
 }
 
-// Update configureOciCli to accept platform as first parameter
-// Add helpers for config merging and file writes
-
 /**
  * Merge existing OCI config content by removing old profile section
  * and appending a new profile block.
@@ -353,7 +350,6 @@ function debugPrintJWTToken(platform: Platform, token: string) {
     }
   }
 }
-
 
 // Main function now creates a local platform instance and passes it to subfunctions
 export async function main(): Promise<void> {

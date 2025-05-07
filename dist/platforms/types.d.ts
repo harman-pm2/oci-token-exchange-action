@@ -20,3 +20,7 @@ export interface PlatformConfig {
     tokenEnvVar?: string;
     audience: string;
 }
+/**
+ * Resolve an input name from various environment variable conventions.
+ */
+export declare function resolveInput(name: string): string;
