@@ -13,8 +13,6 @@
 - [Pull request process](#pull-request-process)
 - [Code of conduct](#code-of-conduct)
 
-# Contributing to this repository
-
 We welcome your contributions! There are multiple ways to contribute, even if you're not a developer.
 
 ## Opening issues
@@ -62,10 +60,10 @@ docs(readme): clarify installation instructions
 
 - Use `!` after the type or scope for breaking changes, e.g. `feat(cli)!: drop Node 16 support`
 - The scope should match the affected module, platform, or feature area.
-- All commit messages must include a `Signed-off-by` line as described above.
+- All commit messages must include a `Signed-off-by` line as described in the [Pre-requisites for code or documentation submissions](#pre-requisites-for-code-or-documentation-submissions).
 
 **Commit message checks:**  
-A commit message hook will automatically check your commit message for Conventional Commits compliance. If your message does not comply, the commit will be rejected with an explanation.
+The commit-msg hook will automatically check your commit message for Conventional Commits compliance. If your message does not comply, the commit will be rejected with an explanation.
 
 If you already have Commitizen installed, you can run `git cz ...` instead of `git commit ...` and Commitizen will make sure your commit message is in the right format and provides all the necessary information.
 
@@ -79,7 +77,7 @@ npx cz
 ```
 This will guide you through the Conventional Commits format.
 
-The commit message hook will analyze your commit message and report anything that needs to be fixed. For example:
+The commit-msg hook will analyze your commit message and report anything that needs to be fixed. For example:
 
 ```
 $ git commit -m "Updated the contribution guide."
