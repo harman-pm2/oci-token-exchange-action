@@ -53,21 +53,10 @@ const cli_1 = require("./platforms/cli");
 const types_1 = require("./types");
 Object.defineProperty(exports, "TokenExchangeError", { enumerable: true, get: function () { return types_1.TokenExchangeError; } });
 const PLATFORM_CONFIGS = {
-    github: {
-        audience: 'https://cloud.oracle.com'
-    },
-    gitlab: {
-        tokenEnvVar: 'CI_JOB_JWT_V2',
-        audience: 'https://cloud.oracle.com/gitlab'
-    },
-    bitbucket: {
-        tokenEnvVar: 'BITBUCKET_STEP_OIDC_TOKEN',
-        audience: 'https://cloud.oracle.com/bitbucket'
-    },
-    local: {
-        tokenEnvVar: 'LOCAL_OIDC_TOKEN',
-        audience: 'https://cloud.oracle.com'
-    }
+    github: { audience: 'https://cloud.oracle.com' },
+    gitlab: { tokenEnvVar: 'CI_JOB_JWT_V2', audience: 'https://cloud.oracle.com' },
+    bitbucket: { tokenEnvVar: 'BITBUCKET_STEP_OIDC_TOKEN', audience: 'https://cloud.oracle.com' },
+    local: { tokenEnvVar: 'LOCAL_OIDC_TOKEN', audience: 'https://cloud.oracle.com' }
 };
 // Create platform instance based on environment
 function createPlatform(platformType) {

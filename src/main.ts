@@ -18,21 +18,10 @@ import {
 } from './types';
 
 const PLATFORM_CONFIGS: Record<string, PlatformConfig> = {
-  github: {
-    audience: 'https://cloud.oracle.com'
-  },
-  gitlab: {
-    tokenEnvVar: 'CI_JOB_JWT_V2',
-    audience: 'https://cloud.oracle.com/gitlab'
-  },
-  bitbucket: {
-    tokenEnvVar: 'BITBUCKET_STEP_OIDC_TOKEN',
-    audience: 'https://cloud.oracle.com/bitbucket'
-  },
-  local: {
-    tokenEnvVar: 'LOCAL_OIDC_TOKEN',
-    audience: 'https://cloud.oracle.com'
-  }
+  github: { audience: 'https://cloud.oracle.com' },
+  gitlab: { tokenEnvVar: 'CI_JOB_JWT_V2', audience: 'https://cloud.oracle.com' },
+  bitbucket: { tokenEnvVar: 'BITBUCKET_STEP_OIDC_TOKEN', audience: 'https://cloud.oracle.com' },
+  local:   { tokenEnvVar: 'LOCAL_OIDC_TOKEN', audience: 'https://cloud.oracle.com' }
 };
 
 // Create platform instance based on environment
