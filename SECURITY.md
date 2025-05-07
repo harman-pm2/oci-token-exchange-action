@@ -6,7 +6,7 @@ The following versions of OCI Token Exchange Action are currently supported with
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.x.x   | :x:                | 
+| 1.x.x   | :heavy_check_mark: | 
 | 0.x.x   | :x:                |
 
 ## Reporting a Vulnerability
