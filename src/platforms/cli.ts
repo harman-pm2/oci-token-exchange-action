@@ -35,7 +35,7 @@ export class CLIPlatform implements Platform {
     return process.env.DEBUG === 'true';
   }
 
-  async getOIDCToken(audience: string): Promise<string> {
+  async getOIDCToken(_audience: string): Promise<string> {
     if (this.config.tokenEnvVar) {
       const token = process.env[this.config.tokenEnvVar];
       if (!token) {

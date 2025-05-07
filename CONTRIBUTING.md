@@ -96,7 +96,7 @@ If you have any questions, please check the Conventional Commits FAQ, start a di
 
 ## Build, Test and Versioning
 
-This project uses a modern, automated build and release system powered by TypeScript, Jest, and [semantic-release](https://github.com/semantic-release/semantic-release).
+This project uses an automated build and release system powered by TypeScript, Jest, and [semantic-release](https://github.com/semantic-release/semantic-release).
 
 ### Build & Test
 
@@ -133,7 +133,6 @@ The project follows a structured process from development to production, using a
 2. **Integration to Develop:**
    - Create a [pull request](#pull-request-process) targeting the `develop` branch.
    - Address review comments and ensure all checks pass.
-   - Squash commits if necessary to maintain a clean history.
    - After approval, a repository maintainer will merge your pull request into `develop`.
    - Verify all tests pass on the `develop` branch.
 

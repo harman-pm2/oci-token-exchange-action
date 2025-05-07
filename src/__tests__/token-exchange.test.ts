@@ -7,11 +7,14 @@ import { Platform, PlatformLogger } from '../platforms/types';
 // Mock axios
 jest.mock('axios');
 
+// Use jest.Mocked for axios to get correct typings
+const mockedAxios = axios as jest.Mocked<typeof axios>;
+
 // Don't mock the whole module, just mock the delay function directly since we're testing tokenExchangeJwtToUpst
-// This avoids TypeScript errors from the mocking approach
-jest.spyOn(global, 'setTimeout').mockImplementation((callback: any) => {
+// Mock delay by immediately invoking the callback and returning a dummy Timeout
+jest.spyOn(global, 'setTimeout').mockImplementation((callback: () => void) => {
   callback();
-  return {} as any;
+  return {} as unknown as NodeJS.Timeout;
 });
 
 // Create a mock platform implementation
@@ -63,15 +66,12 @@ describe('tokenExchangeJwtToUpst', () => {
 
     // Reset axios mocks
     jest.clearAllMocks();
-    (axios.post as jest.MockedFunction<typeof axios.post>).mockReset();
+    mockedAxios.post.mockReset();
   });
 
   it('should successfully exchange JWT for UPST', async () => {
     // Setup axios mock to return a successful response
-    (axios.post as jest.MockedFunction<typeof axios.post>)
-      .mockResolvedValueOnce({
-        data: { token: 'mocked-upst-token' }
-      });
+    mockedAxios.post.mockResolvedValueOnce({ data: { token: 'mocked-upst-token' } });
 
     // Call the function
     const result = await tokenExchangeJwtToUpst(mockPlatform, testConfig);
@@ -80,7 +80,7 @@ describe('tokenExchangeJwtToUpst', () => {
     expect(result).toEqual({ token: 'mocked-upst-token' });
     
     // Check that axios was called with the right parameters
-    expect(axios.post).toHaveBeenCalledWith(
+    expect(mockedAxios.post).toHaveBeenCalledWith(
       testConfig.tokenExchangeURL,
       {
         'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
@@ -104,11 +104,9 @@ describe('tokenExchangeJwtToUpst', () => {
 
   it('should retry on failure if retries are available', async () => {
     // Setup axios mock to fail on first call then succeed
-    (axios.post as jest.MockedFunction<typeof axios.post>)
+    mockedAxios.post
       .mockRejectedValueOnce(new Error('Network error'))
-      .mockResolvedValueOnce({
-        data: { token: 'mocked-upst-token-after-retry' }
-      });
+      .mockResolvedValueOnce({ data: { token: 'mocked-upst-token-after-retry' } });
 
     // Call the function
     const result = await tokenExchangeJwtToUpst(mockPlatform, testConfig);
@@ -117,7 +115,7 @@ describe('tokenExchangeJwtToUpst', () => {
     expect(result).toEqual({ token: 'mocked-upst-token-after-retry' });
     
     // Check that axios was called twice
-    expect(axios.post).toHaveBeenCalledTimes(2);
+    expect(mockedAxios.post).toHaveBeenCalledTimes(2);
     
     // Verify log warning for retry
     expect(mockPlatform.logger.warning).toHaveBeenCalledWith(expect.stringContaining('retrying'));
@@ -127,7 +125,7 @@ describe('tokenExchangeJwtToUpst', () => {
   it('should throw TokenExchangeError after exhausting retries', async () => {
     // Setup axios to fail with a simple error
     const mockError = new Error('Network error');
-    (axios.post as jest.MockedFunction<typeof axios.post>).mockRejectedValue(mockError);
+    mockedAxios.post.mockRejectedValueOnce(mockError);
     
     // Test with minimal retry count to speed up test
     const quickTestConfig = {
@@ -143,7 +141,7 @@ describe('tokenExchangeJwtToUpst', () => {
   it('should include the original error message in TokenExchangeError', async () => {
     // Setup axios with specific error message
     const mockError = new Error('API rate limit exceeded');
-    (axios.post as jest.MockedFunction<typeof axios.post>).mockRejectedValue(mockError);
+    mockedAxios.post.mockRejectedValueOnce(mockError);
     
     // Test with zero retries to avoid delays
     const noRetryConfig = {

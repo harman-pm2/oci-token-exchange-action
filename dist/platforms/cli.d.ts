@@ -11,6 +11,6 @@ export declare class CLIPlatform implements Platform {
     setOutput(name: string, value: string): void;
     setFailed(message: string): void;
     isDebug(): boolean;
-    getOIDCToken(audience: string): Promise<string>;
+    getOIDCToken(_audience: string): Promise<string>;
     get logger(): PlatformLogger;
 }

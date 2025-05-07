@@ -34,7 +34,7 @@ class CLIPlatform {
     isDebug() {
         return process.env.DEBUG === 'true';
     }
-    async getOIDCToken(audience) {
+    async getOIDCToken(_audience) {
         if (this.config.tokenEnvVar) {
             const token = process.env[this.config.tokenEnvVar];
             if (!token) {
