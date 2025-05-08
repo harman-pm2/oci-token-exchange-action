@@ -32,14 +32,15 @@ pipelines:
           # Use the CLI for token exchange
           - |
             cd dist && \
-            export PLATFORM=bitbucket \
-            export OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} \
-            export DOMAIN_BASE_URL=${DOMAIN_BASE_URL} \
-            export OCI_TENANCY=${OCI_TENANCY} \
-            export OCI_REGION=${OCI_REGION} \
-            export OCI_HOME=${BITBUCKET_CLONE_DIR} \
-            export OCI_PROFILE=${OCI_PROFILE} \
-            export RETRY_COUNT=${RETRY_COUNT:-3} \
+            export DEBUG=true && \
+            export PLATFORM=bitbucket && \
+            export OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} && \
+            export DOMAIN_BASE_URL=${DOMAIN_BASE_URL} && \
+            export OCI_TENANCY=${OCI_TENANCY} && \
+            export OCI_REGION=${OCI_REGION} && \
+            export OCI_HOME=${BITBUCKET_CLONE_DIR} && \
+            export OCI_PROFILE=${OCI_PROFILE} && \
+            export RETRY_COUNT=${RETRY_COUNT:-3} && \
             node cli.js || exit 1
           
           # Return to workspace root and verify OCI CLI works with generated token
@@ -74,14 +75,15 @@ pipelines:
             # Run the CLI
             - |
               cd dist && \
-              export PLATFORM=bitbucket \
-              export OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} \
-              export DOMAIN_BASE_URL=${DOMAIN_BASE_URL} \
-              export OCI_TENANCY=${OCI_TENANCY} \
-              export OCI_REGION=${OCI_REGION} \
-              export OCI_HOME=${BITBUCKET_CLONE_DIR} \
-              export OCI_PROFILE=${OCI_PROFILE} \
-              export RETRY_COUNT=${RETRY_COUNT:-3} \
+              export DEBUG=true && \
+              export PLATFORM=bitbucket && \
+              export OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} && \
+              export DOMAIN_BASE_URL=${DOMAIN_BASE_URL} && \
+              export OCI_TENANCY=${OCI_TENANCY} && \
+              export OCI_REGION=${OCI_REGION} && \
+              export OCI_HOME=${BITBUCKET_CLONE_DIR} && \
+              export OCI_PROFILE=${OCI_PROFILE} && \
+              export RETRY_COUNT=${RETRY_COUNT:-3} && \
               node cli.js || exit 1
             
             # Return to workspace root and verify OCI CLI works
