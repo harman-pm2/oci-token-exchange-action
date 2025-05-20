@@ -234,6 +234,19 @@ describe('main.ts', () => {
           expect.arrayContaining([expect.stringMatching(/\.oci\/GORDON\/session$/)])
         ])
       );
+
+      // Verify the content of the main OCI config file for the custom profile
+      const configCall = writeCalls.find(call => String(call[0]).endsWith('/config'));
+      if (!configCall) {
+        throw new Error('Config write call not found in mock calls for custom profile test');
+      }
+      const content = configCall[1] as string;
+      expect(content).toContain('[GORDON]');
+      expect(content).toMatch(/fingerprint\s*=\s*"?test-fingerprint"?/);
+      expect(content).toMatch(/tenancy\s*=\s*"?test-tenancy"?/);
+      expect(content).toMatch(/region\s*=\s*"?test-region"?/);
+      expect(content).toMatch(/key_file\s*=\s*"?\/mock\/home\/.oci\/GORDON\/private_key\.pem"?/);
+      expect(content).toMatch(/security_token_file\s*=\s*"?\/mock\/home\/.oci\/GORDON\/session"?/);
     });
   });
 });

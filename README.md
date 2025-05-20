@@ -71,7 +71,7 @@ npm install -g @gtrevorrow/oci-token-exchange@beta
 ```yaml
 - uses: gtrevorrow/oci-token-exchange-action@v1
   with:
-    oidc_client_identifier: ${{ secrets.OIDC_CLIENT_ID }}
+    oidc_client_identifier: ${{ secrets.OIDC_CLIENT_IDENTIFIER }} # Changed for consistency
     domain_base_url: ${{ vars.DOMAIN_BASE_URL }} # Use vars or secrets.DOMAIN_BASE_URL
     oci_tenancy: ${{ secrets.OCI_TENANCY }}
     oci_region: ${{ secrets.OCI_REGION }}
@@ -113,7 +113,7 @@ deploy:
     - |
       cd dist &&
       PLATFORM=gitlab \
-      OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
+      OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} \
       DOMAIN_BASE_URL=${DOMAIN_BASE_URL} \ # Changed from DOMAIN_URL
       OCI_TENANCY=${OCI_TENANCY} \
       OCI_REGION=${OCI_REGION} \
@@ -159,7 +159,7 @@ deploy_npm:
     # Run the installed CLI
     - |
       PLATFORM=gitlab \
-      OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
+      OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} \
       DOMAIN_BASE_URL=${DOMAIN_BASE_URL} \ # Changed from DOMAIN_URL
       OCI_TENANCY=${OCI_TENANCY} \
       OCI_REGION=${OCI_REGION} \
@@ -209,7 +209,7 @@ pipelines:
           - >
             cd dist &&
             export PLATFORM=bitbucket &&
-            export OIDC_CLIENT_ID=${OIDC_CLIENT_ID} &&
+            export OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} &&
             export DOMAIN_BASE_URL=${DOMAIN_BASE_URL} && # Changed from DOMAIN_URL
             export OCI_TENANCY=${OCI_TENANCY} &&
             export OCI_REGION=${OCI_REGION} &&
@@ -252,7 +252,7 @@ pipelines:
           # Run the installed CLI for token exchange
           - >
             export PLATFORM=bitbucket &&
-            export OIDC_CLIENT_ID=${OIDC_CLIENT_ID} &&
+            export OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} &&
             export DOMAIN_BASE_URL=${DOMAIN_BASE_URL} && # Changed from DOMAIN_URL
             export OCI_TENANCY=${OCI_TENANCY} &&
             export OCI_REGION=${OCI_REGION} &&
@@ -280,7 +280,7 @@ export LOCAL_OIDC_TOKEN="your.jwt.token"
 # Optional: set custom OCI config home
 export OCI_HOME="/custom/home"
 PLATFORM=local \
-OIDC_CLIENT_ID=your-client-id \
+OIDC_CLIENT_IDENTIFIER=your-client-identifier \
 DOMAIN_BASE_URL=https://your-domain.identity.oraclecloud.com \ # Changed from DOMAIN_URL
 OCI_TENANCY=your-tenancy-ocid \
 OCI_REGION=your-region \
@@ -346,4 +346,3 @@ This action is licensed under the [Universal Permissive License v1.0 (UPL-1.0)](
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-`````

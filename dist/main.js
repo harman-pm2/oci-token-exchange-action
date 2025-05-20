@@ -99,30 +99,29 @@ function isValidUrl(url) {
  * @param platform The platform instance for logging.
  * @param token The JWT token string.
  */
-function validateAndLogJwtStructure(platform, token) {
-    if (!platform.isDebug()) {
-        return; // Only run if debug mode is enabled
-    }
-    try {
-        const parts = token.split('.');
-        // Check if the token has the standard 3-part JWT structure
-        if (parts.length === 3) {
-            // Try to parse the token segments to validate it's a proper(ish) JWT
-            // Note: This is a very basic check and does not guarantee the token's validity
-            const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
-            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-            platform.logger.debug(`JWT appears structured as expected (3 parts). Issuer: ${payload.iss || 'unknown'}, kid: ${header.kid || 'unknown'}`);
-        }
-        else {
-            // If not 3 parts, log a warning. It might be an opaque token or malformed.
-            platform.logger.debug(' OIDC token does not have the standard 3-part JWT structure.');
-        }
-    }
-    catch (error) {
-        platform.logger.warning(`Error during basic JWT structure check: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        // Continue, as the token might still be valid for exchange even if parsing failed here
-    }
-}
+// function validateAndLogJwtStructure(platform: Platform, token: string): void {
+//   if (!platform.isDebug()) {
+//     return; // Only run if debug mode is enabled
+//   }
+// 
+//   try {
+//     const parts = token.split('.');
+//     // Check if the token has the standard 3-part JWT structure
+//     if (parts.length === 3) {
+//       // Try to parse the token segments to validate it's a proper(ish) JWT
+//       // Note: This is a very basic check and does not guarantee the token's validity
+//       const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
+//       const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+//       platform.logger.debug(`JWT appears structured as expected (3 parts). Issuer: ${payload.iss || 'unknown'}, kid: ${header.kid || 'unknown'}`);
+//     } else {
+//       // If not 3 parts, log a warning. It might be an opaque token or malformed.
+//       platform.logger.debug(' OIDC token does not have the standard 3-part JWT structure.');
+//     }
+//   } catch (error) {
+//     platform.logger.warning(`Error during basic JWT structure check: ${error instanceof Error ? error.message : 'Unknown error'}`);
+//     // Continue, as the token might still be valid for exchange even if parsing failed here
+//   }
+// }
 // Function to exchange JWT for OCI UPST token
 async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, ociPublicKey, subjectToken, retryCount, currentAttempt = 0 }) {
     const headers = {
@@ -130,9 +129,9 @@ async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, 
         'Authorization': `Basic ${clientCred}`
     };
     // Perform basic validation and logging if debug is enabled
-    if (subjectToken) {
-        validateAndLogJwtStructure(platform, subjectToken);
-    }
+    // if (subjectToken) {
+    //   validateAndLogJwtStructure(platform, subjectToken);
+    // }
     const data = {
         'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
         'requested_token_type': 'urn:oci:token-type:oci-upst',
@@ -179,17 +178,27 @@ async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, 
 function mergeOciConfig(existingRaw, profileName, profileObject) {
     const lines = existingRaw.split('\n');
     const filtered = [];
-    let skip = false;
+    let inTargetSectionToRemove = false; // True if current lines are part of a section to be removed
     for (const line of lines) {
-        if (line.trim() === `[${profileName}]`) {
-            skip = true;
-            continue;
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith('[')) { // This line is a section header
+            if (trimmedLine === `[${profileName}]`) {
+                inTargetSectionToRemove = true; // This section matches the target, so we'll skip its lines
+            }
+            else {
+                inTargetSectionToRemove = false; // This is a different section, stop skipping
+                filtered.push(line); // Add this (different) section header line
+            }
         }
-        if (skip && line.startsWith('[')) {
-            skip = false;
-        }
-        if (!skip && line.trim() !== '') {
-            filtered.push(line);
+        else { // This line is not a section header (it's content or a comment or blank)
+            if (!inTargetSectionToRemove) {
+                // If not currently in a target section to remove, add the line,
+                // but only if it's not blank (to maintain original behavior for other sections).
+                if (trimmedLine !== '') {
+                    filtered.push(line);
+                }
+            }
+            // If inTargetSectionToRemove is true, we do nothing (skip the line)
         }
     }
     const merged = filtered.length ? filtered.join('\n') + '\n' : '';

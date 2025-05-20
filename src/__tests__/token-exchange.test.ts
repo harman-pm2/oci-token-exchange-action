@@ -125,7 +125,8 @@ describe('tokenExchangeJwtToUpst', () => {
   it('should throw TokenExchangeError after exhausting retries', async () => {
     // Setup axios to fail with a simple error
     const mockError = new Error('Network error');
-    mockedAxios.post.mockRejectedValueOnce(mockError);
+    // Ensure all attempts fail to test retry exhaustion
+    mockedAxios.post.mockRejectedValue(mockError); 
     
     // Test with minimal retry count to speed up test
     const quickTestConfig = {
