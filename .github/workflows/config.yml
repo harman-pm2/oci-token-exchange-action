@@ -5,6 +5,8 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Skip this job for dependabot PRs since they don't have access to secrets
+    if: github.actor != 'dependabot[bot]'
     permissions:
         # Only need read access to repository contents and write for ID tokens
         contents: 'read'
@@ -57,4 +59,25 @@ jobs:
       shell: bash
       run: |
         oci --auth security_token --profile GORDON --config-file ${{ github.workspace }}/.oci/config os ns get
-  
+
+  # Add a separate job for Dependabot that only runs basic checks
+  dependabot-check:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4.1.7
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4.0.3
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test
+
+    - name: Build project
+      run: npm run build

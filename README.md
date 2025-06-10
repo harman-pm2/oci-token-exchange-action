@@ -71,12 +71,17 @@ npm install -g @gtrevorrow/oci-token-exchange@beta
 ```yaml
 - uses: gtrevorrow/oci-token-exchange-action@v1
   with:
-    oidc_client_identifier: ${{ secrets.OIDC_CLIENT_IDENTIFIER }} # Changed for consistency
-    domain_base_url: ${{ vars.DOMAIN_BASE_URL }} # Use vars or secrets.DOMAIN_BASE_URL
+    # ci_platform: 'github' # Optional: Defaults to 'github'. Other values: 'gitlab', 'bitbucket', 'local' (though 'github' is typical for Actions)
+    oidc_client_identifier: ${{ secrets.OIDC_CLIENT_IDENTIFIER }} 
+    domain_base_url: ${{ vars.DOMAIN_BASE_URL }} 
     oci_tenancy: ${{ secrets.OCI_TENANCY }}
     oci_region: ${{ secrets.OCI_REGION }}
     # Optional: Custom base folder for OCI config (.oci) directory
-    oci_home: ${{ secrets.OCI_HOME }}
+    # oci_home: ${{ secrets.OCI_HOME }}
+    # Optional: Name of the OCI CLI profile to create. Defaults to 'DEFAULT'.
+    # oci_profile: 'DEFAULT' 
+    # Optional: Number of retry attempts. Defaults to '0'.
+    # retry_count: '0'
 ```
 
 ### GitLab CI
@@ -306,17 +311,18 @@ The action supports flexible environment variable naming to make it easier to us
 
 | Variable | Alternate Names | Description | Required |
 |----------|----------------|-------------|----------|
-| `OIDC_CLIENT_IDENTIFIER` | `INPUT_OIDC_CLIENT_IDENTIFIER` | OIDC client identifier | Yes |
-| `DOMAIN_BASE_URL` | `INPUT_DOMAIN_BASE_URL` | Base URL of OCI Identity Domain | Yes |
-| `OCI_TENANCY` | `INPUT_OCI_TENANCY` | OCI tenancy OCID | Yes |
-| `OCI_REGION` | `INPUT_OCI_REGION` | OCI region identifier | Yes |
-| `PLATFORM` | `INPUT_PLATFORM` | CI platform (`github`, `gitlab`, `bitbucket`, or `local`) | No (default: `github`) |
-| `RETRY_COUNT` | `INPUT_RETRY_COUNT` | Number of retry attempts | No (default: `0`) |
-| `LOCAL_OIDC_TOKEN` | - | OIDC token when using PLATFORM=local | Yes, when platform=local |
-| `CI_JOB_JWT_V2` | - | GitLab CI JWT token | Yes, when platform=gitlab |
-| `BITBUCKET_STEP_OIDC_TOKEN` | - | Bitbucket OIDC token | Yes, when platform=bitbucket |
-| `DEBUG` | - | Enable debug output | No (default: `false`) |
-| `OCI_HOME` | `INPUT_OCI_HOME` | Base folder for OCI config (.oci) directory | No |
+| `OIDC_CLIENT_IDENTIFIER` | `INPUT_OIDC_CLIENT_IDENTIFIER` | The `client_id:client_secret` string for your confidential OAuth client application. This string is the content used for HTTP Basic Authentication (prior to Base64 encoding), as typically used with the OAuth 2.0 client credentials grant type. The action/tool handles the Base64 encoding. This client application must be registered in the OCI IAM domain and listed in the `oauthClients` attribute of your Identity Propagation Trust policy. This identifies the application making the token exchange request. The client credential derived from this identifier is used to validate the client performing the token exchange. It's important to understand that this is not analogous to a static, long-lived API key; you cannot authenticate and authorize calls to OCI APIs using these client credentials directly. Instead, it serves as an additional layer of protection (in addition to the impersonation rules defined in the trust policy) to ensure that only authorized clients can perform a token exchange. This is especially relevant in contexts like GitHub Actions, where all repositories share a single OCI OIDC provider that signs the tokens it issues with the same private key (i.e., the signing key is not unique per repository or workflow). GitHub Action input: `oidc_client_identifier`. CLI env var: `OIDC_CLIENT_IDENTIFIER`. | Yes |
+| `DOMAIN_BASE_URL` | `INPUT_DOMAIN_BASE_URL` | Base URL of OCI Identity Domain. GitHub Action input: `domain_base_url`. CLI env var: `DOMAIN_BASE_URL`. | Yes |
+| `OCI_TENANCY` | `INPUT_OCI_TENANCY` | OCI tenancy OCID. GitHub Action input: `oci_tenancy`. CLI env var: `OCI_TENANCY`. | Yes |
+| `OCI_REGION` | `INPUT_OCI_REGION` | OCI region identifier. GitHub Action input: `oci_region`. CLI env var: `OCI_REGION`. | Yes |
+| `PLATFORM` | `INPUT_CI_PLATFORM` | CI platform. GitHub Action input: `ci_platform` (default: `github`). CLI env var: `PLATFORM` (`github`, `gitlab`, `bitbucket`, or `local`). | No (default: `github`) |
+| `RETRY_COUNT` | `INPUT_RETRY_COUNT` | Number of retry attempts. GitHub Action input: `retry_count`. CLI env var: `RETRY_COUNT`. | No (default: `0`) |
+| `LOCAL_OIDC_TOKEN` | - | OIDC token when using `PLATFORM=local` (CLI only). | Yes, when platform=local |
+| `CI_JOB_JWT_V2` | - | GitLab CI JWT token (used when `PLATFORM=gitlab` for CLI). | Yes, when platform=gitlab |
+| `BITBUCKET_STEP_OIDC_TOKEN` | - | Bitbucket OIDC token (used when `PLATFORM=bitbucket` for CLI). | Yes, when platform=bitbucket |
+| `DEBUG` | - | Enable debug output (CLI env var). | No (default: `false`) |
+| `OCI_HOME` | `INPUT_OCI_HOME` | Base folder for OCI config (.oci) directory. GitHub Action input: `oci_home`. CLI env var: `OCI_HOME`. | No |
+| `OCI_PROFILE` | `INPUT_OCI_PROFILE` | Name of the OCI CLI profile to create. GitHub Action input: `oci_profile`. CLI env var: `OCI_PROFILE`. Defaults to `DEFAULT`. | No |
 
 ### Environment Variable Handling
 
