@@ -107,6 +107,12 @@ This project uses an automated build and release system powered by TypeScript, J
 - **Test:**  
   Run `npm test` to execute all Jest tests.
 
+**Automated Build Process:**  
+The repository includes a `build-and-commit.yml` workflow that automatically builds and commits the `dist/` files whenever changes are pushed to `main`. This ensures that:
+- The bundled action files (`dist/main.js`, `dist/cli.js`) are always up-to-date
+- Contributors only need to modify source files in `src/` 
+- Users referencing `@main` always get working, built code
+
 ### Versioning & Release
 
 This project follows [Semantic Versioning](https://semver.org/) and uses [semantic-release](https://github.com/semantic-release/semantic-release) for automated version management and publishing.
@@ -129,20 +135,24 @@ The project follows a structured process from development to production, using a
    - Run tests locally: `npm test`
    - Commit changes: `git commit -m "feat: add new feature"` following the [Conventional Commits](https://www.conventionalcommits.org/) format
    - Push to your feature branch: `git push origin feature/my-feature`
+   - **Note:** You do not need to run `npm run build` manually - the automated workflow will handle building and committing `dist/` files.
 
 2. **Integration to Develop:**
    - Create a [pull request](#pull-request-process) targeting the `develop` branch.
    - Address review comments and ensure all checks pass.
    - After approval, a repository maintainer will merge your pull request into `develop`.
+   - The `build-and-commit.yml` workflow will automatically build and commit updated `dist/` files.
    - Verify all tests pass on the `develop` branch.
 
 3. **Creating a Release:**
    - Create a [pull request](#pull-request-process) from `develop` to `main`.
-   - This PR represents a release candidate.
+   - This PR represents a release candidate with automatically built `dist/` files.
    - A repository maintainer will run final verification on the release candidate.
    - Once approved, a repository maintainer will merge the pull request to `main`.
    - **Important:** Use either **"Create a merge commit"** or **"Rebase and merge"**. Do **NOT** use "Squash and merge", as this will prevent `semantic-release` from correctly determining the version and generating release notes.
-   - Merging to `main` will automatically trigger the `release.yml` workflow.
+   - Merging to `main` will automatically trigger:
+     1. The `build-and-commit.yml` workflow (ensures `dist/` is current)
+     2. The `release.yml` workflow (handles versioning and publishing)
    - `semantic-release` will then:
      - Analyze the commits on `main` since the last release tag.
      - Determine the appropriate next version number based on conventional commits.

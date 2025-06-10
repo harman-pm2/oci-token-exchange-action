@@ -23,13 +23,11 @@ pipelines:
           # Clone the develop branch and build the token exchange CLI
           - git clone -b develop https://github.com/gtrevorrow/oci-token-exchange-action.git || git clone https://github.com/gtrevorrow/oci-token-exchange-action.git
           - cd oci-token-exchange-action
-          - npm ci
-          
-          # Build the CLI with explicit commands instead of relying on script
-          - npm run build:cli
+          - npm ci                    # ✅ Install dependencies fresh
+          - npm run build:cli        # ✅ Build the bundled CLI
           - chmod +x dist/cli.js
           
-          # Use the CLI for token exchange
+          # Run the CLI with proper environment variables
           - |
             cd dist && \
             export DEBUG=true && \

@@ -31,7 +31,7 @@
         "node": ">=20"
     },
     "scripts": {
-        "build": "tsc",
+        "build": "ncc build src/main.ts -o dist --source-map --license licenses.txt",
         "bundle": "npm run format:write && npm run package",
         "format:write": "npx prettier --write .",
         "format:check": "npx prettier --check .",
@@ -39,7 +39,7 @@
         "package": "npx ncc build src/index.ts -o dist --source-map --license LICENSE.txt",
         "all": "npm run format:write && npm run lint && npm run package",
         "test": "jest",
-        "build:cli": "tsc && chmod +x dist/cli.js",
+        "build:cli": "ncc build src/cli.ts -o dist --source-map --license licenses.txt --target node20",
         "package:cli": "npm run build:cli && npm pack",
         "prepare": "husky install",
         "release": "semantic-release",

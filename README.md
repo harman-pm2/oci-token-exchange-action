@@ -340,6 +340,9 @@ The GitHub Action automatically maps variables from GitHub's format to the stand
 3. Exchanges the JWT for an OCI UPST token
 4. Configures the OCI CLI with the obtained credentials
 
+**Build Process:**  
+This action uses `@vercel/ncc` to bundle the TypeScript source into a single JavaScript file (`dist/main.js`). The repository includes automated workflows that build and commit these bundled files whenever changes are pushed to `main`, ensuring users always get the latest working version.
+
 ## Semantic Versioning
 
 This project uses [semantic-release](https://github.com/semantic-release/semantic-release) for automated versioning and publishing.  
