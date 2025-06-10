@@ -24,7 +24,7 @@
 
 # OCI Token Exchange
 
-A tool to exchange OIDC tokens for [OCI session tokens](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/clitoken.htm), supporting multiple CI platforms:
+A tool to exchange OIDC tokens for [OCI session tokens](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/clitoken.htm), supporting multiple CI/CD platforms:
 - GitHub Actions
 - GitLab CI
 - Bitbucket Pipelines
@@ -36,8 +36,8 @@ A tool to exchange OIDC tokens for [OCI session tokens](https://docs.oracle.com/
 To use this tool as a step in your GitHub Actions workflow, reference it using a specific Git tag or branch. The following options are available, managed automatically by the release workflow:
 
 *   **`@vX` (e.g., `@v1`) - Recommended:** Points to the latest stable release within a specific major version (e.g., the latest `v1.x.y`). This tag is automatically updated upon new releases, allowing you to receive compatible updates and bug fixes without breaking changes.
-*   **`@vX.Y.Z` (e.g., `@v1.1.0`) - Specific Version:** Pins the action to an exact release version. Use this if you need absolute stability and want to control updates manually.
-*   **`@latest` - Latest Release:** Points to the commit of the most recent release published from the `main` branch. This tag is automatically updated upon new releases. Use with caution, as it might pull in breaking changes if a new major version has been released.
+*   **`@vX.Y.Z` (e.g., `@v1.1.0`) - Specific Version:** Pins the action to an exact release version created by semantic-release. Use this if you need absolute stability and want to control updates manually.
+*   **`@latest` - Latest Release:** Points to the most recent release. This tag is automatically updated upon new releases by the release workflow.
 *   **`@main` - Bleeding Edge (Not Recommended):** Runs the action directly from the latest commit on the `main` branch. This is unstable and should generally be avoided in production workflows.
 
 ```yaml
@@ -47,15 +47,12 @@ To use this tool as a step in your GitHub Actions workflow, reference it using a
 # Alternative: Pin to a specific version (e.g., v1.1.0)
 # - uses: gtrevorrow/oci-token-exchange-action@v1.1.0 
 
-# Alternative: Use the latest release (use with caution)
+# Alternative: Use the latest release
 # - uses: gtrevorrow/oci-token-exchange-action@latest
 ```
 
 ### As CLI Tool
 ```bash
-npm install -g @gtrevorrow/oci-token-exchange
-
-# Install the latest version globally
 npm install -g @gtrevorrow/oci-token-exchange
 
 # Install a specific version globally (e.g., 1.2.3)
@@ -339,9 +336,6 @@ The GitHub Action automatically maps variables from GitHub's format to the stand
 2. Requests a GitHub OIDC JWT token
 3. Exchanges the JWT for an OCI UPST token
 4. Configures the OCI CLI with the obtained credentials
-
-**Build Process:**  
-This action uses `@vercel/ncc` to bundle the TypeScript source into a single JavaScript file (`dist/main.js`). The repository includes automated workflows that build and commit these bundled files whenever changes are pushed to `main`, ensuring users always get the latest working version.
 
 ## Semantic Versioning
 

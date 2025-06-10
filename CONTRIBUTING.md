@@ -115,7 +115,7 @@ The repository includes a `build-and-commit.yml` workflow that automatically bui
 
 ### Versioning & Release
 
-This project follows [Semantic Versioning](https://semver.org/) and uses [semantic-release](https://github.com/semantic-release/semantic-release) for automated version management and publishing.
+This project follows [Semantic Versioning](https://semver.org/) and uses [semantic-release](https://github.com/semantic-release/semantic-release) (configured via `.releaserc.json`) for automated version management and publishing.
 
 #### Release Types
 
@@ -141,7 +141,7 @@ The project follows a structured process from development to production, using a
    - Create a [pull request](#pull-request-process) targeting the `develop` branch.
    - Address review comments and ensure all checks pass.
    - After approval, a repository maintainer will merge your pull request into `develop`.
-   - The `build-and-commit.yml` workflow will automatically build and commit updated `dist/` files.
+   - The `build-and-commit.yml` workflow will automatically build and commit updated `dist/` files to the `develop` branch.
    - Verify all tests pass on the `develop` branch.
 
 3. **Creating a Release:**
@@ -154,7 +154,7 @@ The project follows a structured process from development to production, using a
      1. The `build-and-commit.yml` workflow (ensures `dist/` is current)
      2. The `release.yml` workflow (handles versioning and publishing)
    - `semantic-release` will then:
-     - Analyze the commits on `main` since the last release tag.
+     - Analyze the commits on `main` since the last release tag (using rules from `.releaserc.json`).
      - Determine the appropriate next version number based on conventional commits.
      - Generate release notes automatically from commit messages.
      - Create a GitHub release and a corresponding version tag (e.g., `v1.1.0`).

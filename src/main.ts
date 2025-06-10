@@ -21,7 +21,7 @@ const PLATFORM_CONFIGS: Record<string, PlatformConfig> = {
   github: { audience: 'https://cloud.oracle.com' },
   gitlab: { tokenEnvVar: 'CI_JOB_JWT_V2', audience: 'https://cloud.oracle.com' },
   bitbucket: { tokenEnvVar: 'BITBUCKET_STEP_OIDC_TOKEN', audience: 'https://cloud.oracle.com' },
-  local:   { tokenEnvVar: 'LOCAL_OIDC_TOKEN', audience: 'https://cloud.oracle.com' }
+  local: { tokenEnvVar: 'LOCAL_OIDC_TOKEN', audience: 'https://cloud.oracle.com' }
 };
 
 // Create platform instance based on environment

@@ -1,35 +1,48 @@
-name: 'oci-token-exchange-action'
-description: 'Exchange GitHub OIDC ID Token for OCI Session token for use in the GitHub Actions workflow job'
-branding:
-  color: red
-  icon: cloud
+name: 'OCI Token Exchange'
+description: 'Exchanges OIDC tokens for OCI session tokens and configures OCI CLI.'
+author: 'gtrevorrow'
+
 inputs:
   ci_platform:
-    description: 'CI platform (github)'
+    description: "CI platform. Defaults to 'github'. Other values: 'gitlab', 'bitbucket', 'local'."
     required: false
     default: 'github'
-  oidc_client_identifier:  
-    description: 'OIDC Client Identifier'
+  oidc_client_identifier:
+    description: 'OIDC client identifier (client_id:client_secret) for the confidential OAuth application.'
     required: true
-  domain_base_url:  
-    description: 'Base URL of OCI Domain that provides the token exchange endpoint'
+  domain_base_url:
+    description: 'Base URL of the OCI Identity Domain (e.g., https://idcs-xxxxxxxxxxxx.identity.oraclecloud.com).'
     required: true
-  oci_tenancy:  
-    description: 'OCI Tenancy'
+  oci_tenancy:
+    description: 'OCI tenancy OCID.'
     required: true
-  oci_region:  
-    description: 'OCI Region'
+  oci_region:
+    description: 'OCI region identifier (e.g., us-ashburn-1).'
     required: true
   oci_home:
-    description: 'Base folder for OCI config (.oci) directory. Defaults to $HOME.'
+    description: 'Optional: Custom base folder for OCI config (.oci) directory. Defaults to ~/.oci'
     required: false
   oci_profile:
-    description: 'Name of the OCI CLI profile to create. Defaults to DEFAULT.'
+    description: "Optional: Name of the OCI CLI profile to create. Defaults to 'DEFAULT'."
     required: false
-  retry_count: 
-    description: 'Number of times to retry the token exchange, default value of 0 means no retries'
+    default: 'DEFAULT'
+  retry_count:
+    description: "Optional: Number of retry attempts for token exchange. Defaults to '0'."
     required: false
     default: '0'
+
+outputs:
+  oci_config_path:
+    description: "The path to the generated OCI configuration file."
+  oci_session_token_path:
+    description: "The path to the OCI session token file."
+  oci_private_key_path:
+    description: "The path to the generated private key used for the session."
+
 runs:
   using: 'node20'
-  main: 'dist/main.js'  # ✅ Points to bundled output
+  main: 'dist/main.js'
+
+branding:
+  icon: 'shield'
+  color: 'orange'
