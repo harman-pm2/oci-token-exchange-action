@@ -32,6 +32,6 @@ export function resolveInput(name: string): string {
     process.env[`INPUT_${name.toUpperCase()}`] ||
     process.env[`OCI_${name.toUpperCase()}`] ||
     process.env[`OIDC_${name.toUpperCase()}`] ||
-    ''
+    ""
   );
 }

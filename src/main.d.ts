@@ -2,19 +2,19 @@
  * Copyright (c) 2021, 2025 Oracle and/or its affiliates.
  * Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
  */
-import { Platform } from './platforms/types';
-import { 
-  OciConfig, 
-  TokenExchangeConfig, 
-  UpstTokenResponse, 
-  TokenExchangeError 
-} from './types';
+import { Platform } from "./platforms/types";
+import {
+  OciConfig,
+  TokenExchangeConfig,
+  UpstTokenResponse,
+  TokenExchangeError,
+} from "./types";
 
 export {
   OciConfig,
   TokenExchangeConfig,
   UpstTokenResponse,
-  TokenExchangeError
+  TokenExchangeError,
 };
 
 /**
@@ -25,7 +25,7 @@ export {
  */
 export function tokenExchangeJwtToUpst(
   platform: Platform,
-  config: TokenExchangeConfig
+  config: TokenExchangeConfig,
 ): Promise<UpstTokenResponse>;
 
 /**
@@ -36,7 +36,7 @@ export function tokenExchangeJwtToUpst(
  */
 export function configureOciCli(
   platform: Platform,
-  config: OciConfig
+  config: OciConfig,
 ): Promise<void>;
 
 /**

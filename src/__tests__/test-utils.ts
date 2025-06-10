@@ -3,8 +3,8 @@
  * Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
  */
 
-import { jest } from '@jest/globals';
-import { Platform, PlatformLogger } from '../platforms/types';
+import { jest } from "@jest/globals";
+import { Platform, PlatformLogger } from "../platforms/types";
 
 export class MockPlatform implements Platform {
   public readonly logger: PlatformLogger;
@@ -14,7 +14,7 @@ export class MockPlatform implements Platform {
       debug: jest.fn(),
       info: jest.fn(),
       warning: jest.fn(),
-      error: jest.fn()
+      error: jest.fn(),
     };
   }
 
@@ -22,5 +22,7 @@ export class MockPlatform implements Platform {
   setOutput = jest.fn();
   setFailed = jest.fn();
   isDebug = jest.fn<() => boolean>().mockReturnValue(false);
-  getOIDCToken = jest.fn<(audience: string) => Promise<string>>().mockResolvedValue('mock-token');
+  getOIDCToken = jest
+    .fn<(audience: string) => Promise<string>>()
+    .mockResolvedValue("mock-token");
 }
