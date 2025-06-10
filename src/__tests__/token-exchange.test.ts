@@ -1,8 +1,8 @@
-import { jest, expect, describe, it, beforeEach } from '@jest/globals';
+import { jest, expect, describe, it, test, beforeEach } from '@jest/globals';
 import axios from 'axios';
 import { TokenExchangeConfig, TokenExchangeError, tokenExchangeJwtToUpst } from '../main';
 import * as crypto from 'crypto';
-import { Platform, PlatformLogger } from '../platforms/types';
+import { MockPlatform } from './test-utils';
 
 // Mock axios
 jest.mock('axios');
@@ -16,26 +16,6 @@ jest.spyOn(global, 'setTimeout').mockImplementation((callback: () => void) => {
   callback();
   return {} as unknown as NodeJS.Timeout;
 });
-
-// Create a mock platform implementation
-class MockPlatform implements Platform {
-  public readonly logger: PlatformLogger;
-
-  constructor() {
-    this.logger = {
-      debug: jest.fn(),
-      info: jest.fn(),
-      warning: jest.fn(),
-      error: jest.fn()
-    };
-  }
-
-  getInput = jest.fn<(name: string, required?: boolean) => string>();
-  setOutput = jest.fn();
-  setFailed = jest.fn();
-  isDebug = jest.fn<() => boolean>().mockReturnValue(false);
-  getOIDCToken = jest.fn<(audience: string) => Promise<string>>().mockResolvedValue('mock-token');
-}
 
 describe('tokenExchangeJwtToUpst', () => {
   let mockPlatform: MockPlatform;
@@ -121,37 +101,35 @@ describe('tokenExchangeJwtToUpst', () => {
     expect(mockPlatform.logger.warning).toHaveBeenCalledWith(expect.stringContaining('retrying'));
   });
 
-  // Simplify test cases to avoid timeouts
-  it('should throw TokenExchangeError after exhausting retries', async () => {
-    // Setup axios to fail with a simple error
-    const mockError = new Error('Network error');
-    // Ensure all attempts fail to test retry exhaustion
-    mockedAxios.post.mockRejectedValue(mockError); 
-    
-    // Test with minimal retry count to speed up test
-    const quickTestConfig = {
-      ...testConfig,
-      retryCount: 1  // Use fewer retries to avoid timeout
-    };
 
-    // Expect rejection with TokenExchangeError
-    await expect(tokenExchangeJwtToUpst(mockPlatform, quickTestConfig))
-      .rejects.toThrow(TokenExchangeError);
+  const errorTestCases: [string, number, boolean, string][] = [
+    ['should throw TokenExchangeError after exhausting retries', 1, true, 'API rate limit exceeded'],
+    ['should include the original error message in TokenExchangeError', 0, false, 'Network timeout error'],
+    ['should handle HTTP error responses correctly', 2, true, 'Unauthorized access']
+  ];
+
+  test.each(errorTestCases)('%s', async (description: string, retryCount: number, shouldThrowTokenExchangeError: boolean, errorMessage: string) => {
+    const mockError = new Error(errorMessage);
+    mockedAxios.post.mockRejectedValue(mockError);
+    
+    const quickTestConfig = { ...testConfig, retryCount };
+
+    if (shouldThrowTokenExchangeError) {
+      await expect(tokenExchangeJwtToUpst(mockPlatform, quickTestConfig))
+        .rejects.toThrow(TokenExchangeError);
+    } else {
+      await expect(tokenExchangeJwtToUpst(mockPlatform, quickTestConfig))
+        .rejects.toThrow(errorMessage);
+    }
   });
 
-  it('should include the original error message in TokenExchangeError', async () => {
-    // Setup axios with specific error message
-    const mockError = new Error('API rate limit exceeded');
-    mockedAxios.post.mockRejectedValueOnce(mockError);
+  it('should handle network timeout errors by throwing the original error', async () => {
+    const timeoutError = new Error('Request timeout');
+    timeoutError.name = 'ETIMEDOUT';
+    mockedAxios.post.mockRejectedValue(timeoutError);
     
-    // Test with zero retries to avoid delays
-    const noRetryConfig = {
-      ...testConfig,
-      retryCount: 0
-    };
-
-    // Test for specific error message
+    const noRetryConfig = { ...testConfig, retryCount: 0 };
     await expect(tokenExchangeJwtToUpst(mockPlatform, noRetryConfig))
-      .rejects.toThrow(/API rate limit exceeded/);
+      .rejects.toThrow('Request timeout');
   });
 });
