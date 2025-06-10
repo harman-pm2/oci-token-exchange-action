@@ -9,6 +9,8 @@ The following versions of OCI Token Exchange Action are currently supported with
 | 1.x.x   | :heavy_check_mark: | 
 | 0.x.x   | :x:                |
 
+Security updates are provided for the latest patch release within the supported major version (e.g., 1.x.x).
+
 ## Reporting a Vulnerability
 
 Your efforts to responsibly disclose your findings is appreciated.
