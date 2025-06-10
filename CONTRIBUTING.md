@@ -104,6 +104,7 @@ This project uses an automated build and release system powered by TypeScript, J
   Run `npm run build` to compile TypeScript sources to `dist/`.
 - **Lint & Format:**  
   Run `npm run lint` and `npm run format:check` to check code style.
+  To automatically fix formatting issues, run `npm run format:write`.
 - **Test:**  
   Run `npm test` to execute all Jest tests.
 
