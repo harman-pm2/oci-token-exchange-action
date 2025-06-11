@@ -64,6 +64,8 @@ jobs:
   dependabot-check:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
+    permissions:
+      contents: read
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4.1.7
