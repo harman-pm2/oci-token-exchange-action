@@ -61,19 +61,31 @@ jobs:
           SCRIPT_EXIT_CODE=$?
           echo "Semantic release script exited with code: $SCRIPT_EXIT_CODE"
           
+          # Always output error log content for debugging
+          echo "--- semantic-release-error.log content ---"
+          if [ -f semantic-release-error.log ]; then
+            cat semantic-release-error.log
+          else
+            echo "semantic-release-error.log does not exist."
+          fi
+          echo "--- End of semantic-release-error.log content ---"
+          
+          # Always output semantic-release output for debugging
+          echo "--- semantic-release-output.json content ---"
+          if [ -f semantic-release-output.json ]; then
+            cat semantic-release-output.json
+          else
+            echo "semantic-release-output.json does not exist."
+          fi
+          echo "--- End of semantic-release-output.json content ---"
+          
           if [ "$SCRIPT_EXIT_CODE" -eq 1 ]; then
-            echo "::error::Semantic release script failed. See semantic-release-error.log for details."
-            # Optionally, output the error log content here for easier debugging in Actions UI
-            if [ -f semantic-release-error.log ]; then
-              echo "--- semantic-release-error.log content ---"
-              cat semantic-release-error.log
-              echo "--- End of semantic-release-error.log content ---"
-            fi
+            echo "::error::Semantic release script failed. See logs above for details."
             exit 1 # Explicitly fail this workflow step
           fi
           echo "SCRIPT_EXIT_CODE=$SCRIPT_EXIT_CODE" >> $GITHUB_ENV
         env:
-          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Set Semantic Release Outputs
