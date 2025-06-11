@@ -48,9 +48,12 @@ jobs:
       - name: Run Semantic Release
         id: semantic
         run: |
-          npx semantic-release -q > semantic-release-output.json || true 
-          # '-q' (quiet) should suppress logs, leaving only JSON in stdout.
-          # '|| true' ensures the step doesn't fail if semantic-release exits with a non-zero code when no release is made.
+          node .github/scripts/run-semantic-release.js > semantic-release-output.json 2> semantic-release-error.log || true
+          # If run-semantic-release.js encounters an error or no release, 
+          # semantic-release-output.json might be empty or not created.
+          # Errors from the script go to semantic-release-error.log.
+          # '|| true' ensures this step doesn't fail the workflow if semantic-release itself (programmatically) exits with an error
+          # or if no release is made (script exits cleanly, output file is empty).
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -58,16 +61,23 @@ jobs:
       - name: Set Semantic Release Outputs
         id: sr_outputs
         run: |
-          echo "--- Debug: Initial content of semantic-release-output.json (after 'semantic-release -q') ---"
+          echo "--- Debug: Content of semantic-release-output.json (after programmatic run) ---"
           if [ -f semantic-release-output.json ]; then
             cat semantic-release-output.json
           else
-            echo "semantic-release-output.json does NOT exist at the start of the step."
+            echo "semantic-release-output.json does NOT exist."
           fi
-          echo "--- End of initial content ---"
+          echo "--- End of content ---"
+
+          echo "--- Debug: Content of semantic-release-error.log ---"
+          if [ -f semantic-release-error.log ]; then
+            cat semantic-release-error.log
+          else
+            echo "semantic-release-error.log does NOT exist."
+          fi
+          echo "--- End of error log content ---"
 
           if [ -f semantic-release-output.json ] && [ -s semantic-release-output.json ]; then
-            # With '-q', the file should ideally contain only JSON or be empty.
             JSON_OUTPUT=$(cat semantic-release-output.json)
 
             if echo "$JSON_OUTPUT" | jq -e . > /dev/null; then
@@ -83,9 +93,12 @@ jobs:
                 echo "new_release_published=true" >> $GITHUB_OUTPUT
                 echo "new_release_version=$VERSION" >> $GITHUB_OUTPUT
                 
-                echo "new_release_notes<<EOF_NOTES" >> $GITHUB_OUTPUT
-                echo "$NOTES_RAW" >> $GITHUB_OUTPUT
-                echo "EOF_NOTES" >> $GITHUB_OUTPUT
+                # Ensure notes are properly escaped for multiline output
+                {
+                  echo "new_release_notes<<EOF_NOTES"
+                  echo "$NOTES_RAW"
+                  echo "EOF_NOTES"
+                } >> $GITHUB_OUTPUT
 
                 echo "Successfully parsed release information: Version $VERSION"
               else
@@ -95,15 +108,15 @@ jobs:
                 echo "new_release_notes=" >> $GITHUB_OUTPUT
               fi
             else
-              echo "Failed to validate semantic-release-output.json as JSON."
+              echo "Failed to validate semantic-release-output.json as JSON (programmatic run)."
               echo "File content was:"
-              echo "$JSON_OUTPUT" # This will be the same as cat semantic-release-output.json
+              cat semantic-release-output.json
               echo "new_release_published=false" >> $GITHUB_OUTPUT
               echo "new_release_version=" >> $GITHUB_OUTPUT
               echo "new_release_notes=" >> $GITHUB_OUTPUT
             fi
           else
-            echo "semantic-release-output.json does not exist or is empty (no release made or -q suppressed all output)."
+            echo "semantic-release-output.json does not exist or is empty (no release made or programmatic run failed to produce JSON output)."
             echo "new_release_published=false" >> $GITHUB_OUTPUT
             echo "new_release_version=" >> $GITHUB_OUTPUT
             echo "new_release_notes=" >> $GITHUB_OUTPUT
