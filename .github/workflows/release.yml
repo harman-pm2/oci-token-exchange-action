@@ -46,27 +46,74 @@ jobs:
         run: npm test
 
       - name: Run Semantic Release
-        id: semantic # Add an ID to reference the output
-        run: npx semantic-release
+        id: semantic
+        run: |
+          npx semantic-release > semantic-release-output.json || true 
+          # '|| true' ensures the step doesn't fail if semantic-release exits with a non-zero code when no release is made.
+          # We'll check the content of semantic-release-output.json to determine if a release happened.
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Get released version
-        # Check if semantic-release step produced a new version by checking the version output
-        if: steps.semantic.outputs.new_release_version != '' && steps.semantic.outputs.new_release_version != null
+      - name: Set Semantic Release Outputs
+        id: sr_outputs
         run: |
-          echo "RELEASE_VERSION=${{ steps.semantic.outputs.new_release_version }}" >> $GITHUB_ENV
-          echo "New version released: ${{ steps.semantic.outputs.new_release_version }}"
+          if [ -f semantic-release-output.json ] && [ -s semantic-release-output.json ]; then
+            # A non-empty file exists, try to parse it
+            if jq -e . semantic-release-output.json > /dev/null; then
+              echo "semantic-release-output.json content:"
+              cat semantic-release-output.json
+              VERSION=$(jq -r '.nextRelease.version // ""' semantic-release-output.json)
+              NOTES=$(jq -r '.nextRelease.notes // ""' semantic-release-output.json)
+              
+              if [ -n "$VERSION" ]; then
+                echo "new_release_published=true" >> $GITHUB_OUTPUT
+                echo "new_release_version=$VERSION" >> $GITHUB_OUTPUT
+                # For notes, escape newlines for multiline output
+                NOTES_ESCAPED=$(echo "$NOTES" | awk '{printf "%s\\n", $0}' | sed '$ s/\\n$//')
+                echo "new_release_notes=${NOTES_ESCAPED}" >> $GITHUB_OUTPUT
+                echo "Successfully parsed release information."
+              else
+                echo "No new release version found in semantic-release-output.json."
+                echo "new_release_published=false" >> $GITHUB_OUTPUT
+                echo "new_release_version=" >> $GITHUB_OUTPUT
+                echo "new_release_notes=" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "semantic-release-output.json is not valid JSON or empty. Assuming no release."
+              cat semantic-release-output.json # Print content for debugging
+              echo "new_release_published=false" >> $GITHUB_OUTPUT
+              echo "new_release_version=" >> $GITHUB_OUTPUT
+              echo "new_release_notes=" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "semantic-release-output.json does not exist or is empty. Assuming no release."
+            echo "new_release_published=false" >> $GITHUB_OUTPUT
+            echo "new_release_version=" >> $GITHUB_OUTPUT
+            echo "new_release_notes=" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Get released version
+        # Check if the new 'Set Semantic Release Outputs' step indicates a release
+        if: steps.sr_outputs.outputs.new_release_published == 'true'
+        run: |
+          echo "RELEASE_VERSION=${{ steps.sr_outputs.outputs.new_release_version }}" >> $GITHUB_ENV
+          echo "New version released: ${{ steps.sr_outputs.outputs.new_release_version }}"
 
       # Add a step to debug outputs if the problem persists
       - name: Dump semantic-release outputs
-        if: always() # Always run this step to see the outputs
+        if: always()
         run: |
-          echo "Semantic Release Outputs:"
-          echo "new_release_published: ${{ steps.semantic.outputs.new_release_published }}"
-          echo "new_release_version: ${{ steps.semantic.outputs.new_release_version }}"
-          echo "new_release_notes: ${{ steps.semantic.outputs.new_release_notes }}"
+          echo "Semantic Release Outputs (from sr_outputs step):"
+          echo "new_release_published: ${{ steps.sr_outputs.outputs.new_release_published }}"
+          echo "new_release_version: ${{ steps.sr_outputs.outputs.new_release_version }}"
+          # echo "new_release_notes: ${{ steps.sr_outputs.outputs.new_release_notes }}" # Notes can be very long
+          if [ -n "${{ steps.sr_outputs.outputs.new_release_notes }}" ]; then
+            echo "new_release_notes are set (not printing full content)."
+          else
+            echo "new_release_notes are empty."
+          fi
 
       # Add steps to update major version tag
       - name: Update Major Version Tag (e.g., v1)
