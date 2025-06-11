@@ -5,6 +5,10 @@ on:
     branches:
       - main
       - develop
+  pull_request: # Add this
+    branches:   # Add this
+      - main    # Add this
+      - develop # Add this
 
 jobs:
   build:
@@ -26,11 +30,17 @@ jobs:
     # 4. Builds your action using ncc (creates dist/main.js and dist/cli.js)
     - run: npm run build
     
+    # Run tests
+    - name: Run tests
+      run: npm test
+      
     # 5. Commits the built files back to the repository
+    # Only run this step on push events, not on pull_request events
     - name: Commit built files
+      if: github.event_name == 'push' 
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add dist/                                    # Stage the built files
-        git diff --staged --quiet || git commit -m "Build dist files"  # Only commit if changes exist
-        git push                                         # Push back to main
+        git diff --staged --quiet || git commit -m "chore: Build dist files [skip ci]"  # Only commit if changes exist, add [skip ci]
+        git push
