@@ -53,11 +53,20 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Get released version
-        # Check if semantic-release step produced a new version
-        if: steps.semantic.outputs.new_release_published == 'true' 
+        # Check if semantic-release step produced a new version by checking the version output
+        if: steps.semantic.outputs.new_release_version != '' && steps.semantic.outputs.new_release_version != null
         run: |
           echo "RELEASE_VERSION=${{ steps.semantic.outputs.new_release_version }}" >> $GITHUB_ENV
           echo "New version released: ${{ steps.semantic.outputs.new_release_version }}"
+
+      # Add a step to debug outputs if the problem persists
+      - name: Dump semantic-release outputs
+        if: always() # Always run this step to see the outputs
+        run: |
+          echo "Semantic Release Outputs:"
+          echo "new_release_published: ${{ steps.semantic.outputs.new_release_published }}"
+          echo "new_release_version: ${{ steps.semantic.outputs.new_release_version }}"
+          echo "new_release_notes: ${{ steps.semantic.outputs.new_release_notes }}"
 
       # Add steps to update major version tag
       - name: Update Major Version Tag (e.g., v1)
