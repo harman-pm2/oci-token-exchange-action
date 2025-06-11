@@ -13,8 +13,6 @@
 - [Pull request process](#pull-request-process)
 - [Code of conduct](#code-of-conduct)
 
-# Contributing to this repository
-
 We welcome your contributions! There are multiple ways to contribute, even if you're not a developer.
 
 ## Opening issues
@@ -62,10 +60,10 @@ docs(readme): clarify installation instructions
 
 - Use `!` after the type or scope for breaking changes, e.g. `feat(cli)!: drop Node 16 support`
 - The scope should match the affected module, platform, or feature area.
-- All commit messages must include a `Signed-off-by` line as described above.
+- All commit messages must include a `Signed-off-by` line as described in the [Pre-requisites for code or documentation submissions](#pre-requisites-for-code-or-documentation-submissions).
 
 **Commit message checks:**  
-A commit message hook will automatically check your commit message for Conventional Commits compliance. If your message does not comply, the commit will be rejected with an explanation.
+The commit-msg hook will automatically check your commit message for Conventional Commits compliance. If your message does not comply, the commit will be rejected with an explanation.
 
 If you already have Commitizen installed, you can run `git cz ...` instead of `git commit ...` and Commitizen will make sure your commit message is in the right format and provides all the necessary information.
 
@@ -79,7 +77,7 @@ npx cz
 ```
 This will guide you through the Conventional Commits format.
 
-The commit message hook will analyze your commit message and report anything that needs to be fixed. For example:
+The commit-msg hook will analyze your commit message and report anything that needs to be fixed. For example:
 
 ```
 $ git commit -m "Updated the contribution guide."
@@ -98,7 +96,7 @@ If you have any questions, please check the Conventional Commits FAQ, start a di
 
 ## Build, Test and Versioning
 
-This project uses a modern, automated build and release system powered by TypeScript, Jest, and [semantic-release](https://github.com/semantic-release/semantic-release).
+This project uses an automated build and release system powered by TypeScript, Jest, and [semantic-release](https://github.com/semantic-release/semantic-release).
 
 ### Build & Test
 
@@ -106,12 +104,19 @@ This project uses a modern, automated build and release system powered by TypeSc
   Run `npm run build` to compile TypeScript sources to `dist/`.
 - **Lint & Format:**  
   Run `npm run lint` and `npm run format:check` to check code style.
+  To automatically fix formatting issues, run `npm run format:write`.
 - **Test:**  
   Run `npm test` to execute all Jest tests.
 
+**Automated Build Process:**  
+The repository includes a `build-and-commit.yml` workflow that automatically builds and commits the `dist/` files whenever changes are pushed to `main`. This ensures that:
+- The bundled action files (`dist/main.js`, `dist/cli.js`) are always up-to-date
+- Contributors only need to modify source files in `src/` 
+- Users referencing `@main` always get working, built code
+
 ### Versioning & Release
 
-This project follows [Semantic Versioning](https://semver.org/) and uses [semantic-release](https://github.com/semantic-release/semantic-release) for automated version management and publishing.
+This project follows [Semantic Versioning](https://semver.org/) and uses [semantic-release](https://github.com/semantic-release/semantic-release) (configured via `.releaserc.json`) for automated version management and publishing.
 
 #### Release Types
 
@@ -131,23 +136,26 @@ The project follows a structured process from development to production, using a
    - Run tests locally: `npm test`
    - Commit changes: `git commit -m "feat: add new feature"` following the [Conventional Commits](https://www.conventionalcommits.org/) format
    - Push to your feature branch: `git push origin feature/my-feature`
+   - **Note:** You do not need to run `npm run build` manually - the automated workflow will handle building and committing `dist/` files.
 
 2. **Integration to Develop:**
    - Create a [pull request](#pull-request-process) targeting the `develop` branch.
    - Address review comments and ensure all checks pass.
-   - Squash commits if necessary to maintain a clean history.
    - After approval, a repository maintainer will merge your pull request into `develop`.
+   - The `build-and-commit.yml` workflow will automatically build and commit updated `dist/` files to the `develop` branch.
    - Verify all tests pass on the `develop` branch.
 
 3. **Creating a Release:**
    - Create a [pull request](#pull-request-process) from `develop` to `main`.
-   - This PR represents a release candidate.
+   - This PR represents a release candidate with automatically built `dist/` files.
    - A repository maintainer will run final verification on the release candidate.
    - Once approved, a repository maintainer will merge the pull request to `main`.
    - **Important:** Use either **"Create a merge commit"** or **"Rebase and merge"**. Do **NOT** use "Squash and merge", as this will prevent `semantic-release` from correctly determining the version and generating release notes.
-   - Merging to `main` will automatically trigger the `release.yml` workflow.
+   - Merging to `main` will automatically trigger:
+     1. The `build-and-commit.yml` workflow (ensures `dist/` is current)
+     2. The `release.yml` workflow (handles versioning and publishing)
    - `semantic-release` will then:
-     - Analyze the commits on `main` since the last release tag.
+     - Analyze the commits on `main` since the last release tag (using rules from `.releaserc.json`).
      - Determine the appropriate next version number based on conventional commits.
      - Generate release notes automatically from commit messages.
      - Create a GitHub release and a corresponding version tag (e.g., `v1.1.0`).

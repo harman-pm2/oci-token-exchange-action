@@ -1,0 +1,53 @@
+name: OCI Terraform with Token Exchange Example
+
+on:
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  terraform_oci_apply:
+    name: Terraform Apply to OCI
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC token exchange
+      contents: read   # Required to checkout the repository
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup OCI CLI Profile via Token Exchange
+        # This uses the local action in the current repository.
+        # Ensure your action.yml is at the root or adjust the path.
+        uses: ./ 
+        with:
+          oidc_client_identifier: ${{ secrets.OIDC_CLIENT_ID }}
+          domain_base_url: ${{ secrets.DOMAIN_BASE_URL }}
+          oci_tenancy: ${{ secrets.OCI_TENANCY_OCID }}
+          oci_region: ${{ secrets.OCI_REGION }}
+          # oci_profile: 'TERRAFORM_PROFILE' # Optional: specify a profile name
+          # oci_home: '/home/runner/.oci_tf' # Optional: specify a custom OCI home
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest # Or specify a fixed version
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        # Ensure your Terraform files (e.g., main.tf) are in the root
+        # or specify a path with -chdir: path/to/terraform/files
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+        # If you used a custom oci_profile or oci_home in the action,
+        # you need to configure the Terraform OCI provider accordingly.
+    
+      - name: Terraform Apply
+        id: apply
+        # Potentially add a condition, e.g., only run on the main branch
+        # if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve -no-color tfplan
+        # env:
+        #   OCI_CLI_PROFILE: TERRAFORM_PROFILE # If custom profile was used

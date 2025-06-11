@@ -1,4 +1,4 @@
-import { Platform, PlatformLogger } from './types';
+import { Platform, PlatformLogger } from "./types";
 export declare class GitHubPlatform implements Platform {
     private readonly _logger;
     getInput(name: string, required?: boolean): string;

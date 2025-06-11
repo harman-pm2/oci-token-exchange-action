@@ -41,7 +41,7 @@ exports.tokenExchangeJwtToUpst = tokenExchangeJwtToUpst;
 exports.configureOciCli = configureOciCli;
 exports.main = main;
 /**
- * Copyright (c) 2021, 2024 Oracle and/or its affiliates.
+ * Copyright (c) 2021, 2025 Oracle and/or its affiliates.
  * Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
  */
 const fs = __importStar(require("fs/promises"));
@@ -53,21 +53,10 @@ const cli_1 = require("./platforms/cli");
 const types_1 = require("./types");
 Object.defineProperty(exports, "TokenExchangeError", { enumerable: true, get: function () { return types_1.TokenExchangeError; } });
 const PLATFORM_CONFIGS = {
-    github: {
-        audience: 'https://cloud.oracle.com'
-    },
-    gitlab: {
-        tokenEnvVar: 'CI_JOB_JWT_V2',
-        audience: 'https://cloud.oracle.com/gitlab'
-    },
-    bitbucket: {
-        tokenEnvVar: 'BITBUCKET_STEP_OIDC_TOKEN',
-        audience: 'https://cloud.oracle.com/bitbucket'
-    },
-    local: {
-        tokenEnvVar: 'LOCAL_OIDC_TOKEN',
-        audience: 'https://cloud.oracle.com'
-    }
+    github: { audience: 'https://cloud.oracle.com' },
+    gitlab: { tokenEnvVar: 'CI_JOB_JWT_V2', audience: 'https://cloud.oracle.com' },
+    bitbucket: { tokenEnvVar: 'BITBUCKET_STEP_OIDC_TOKEN', audience: 'https://cloud.oracle.com' },
+    local: { tokenEnvVar: 'LOCAL_OIDC_TOKEN', audience: 'https://cloud.oracle.com' }
 };
 // Create platform instance based on environment
 function createPlatform(platformType) {
@@ -105,34 +94,44 @@ function isValidUrl(url) {
         return false;
     }
 }
+/**
+ * Performs a basic structural validation of a JWT and logs debug information.
+ * @param platform The platform instance for logging.
+ * @param token The JWT token string.
+ */
+// function validateAndLogJwtStructure(platform: Platform, token: string): void {
+//   if (!platform.isDebug()) {
+//     return; // Only run if debug mode is enabled
+//   }
+// 
+//   try {
+//     const parts = token.split('.');
+//     // Check if the token has the standard 3-part JWT structure
+//     if (parts.length === 3) {
+//       // Try to parse the token segments to validate it's a proper(ish) JWT
+//       // Note: This is a very basic check and does not guarantee the token's validity
+//       const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
+//       const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+//       platform.logger.debug(`JWT appears structured as expected (3 parts). Issuer: ${payload.iss || 'unknown'}, kid: ${header.kid || 'unknown'}`);
+//     } else {
+//       // If not 3 parts, log a warning. It might be an opaque token or malformed.
+//       platform.logger.debug(' OIDC token does not have the standard 3-part JWT structure.');
+//     }
+//   } catch (error) {
+//     platform.logger.warning(`Error during basic JWT structure check: ${error instanceof Error ? error.message : 'Unknown error'}`);
+//     // Continue, as the token might still be valid for exchange even if parsing failed here
+//   }
+// }
 // Function to exchange JWT for OCI UPST token
 async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, ociPublicKey, subjectToken, retryCount, currentAttempt = 0 }) {
     const headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${clientCred}`
     };
-    if (subjectToken && platform.isDebug()) {
-        // Do some basic validation on the JWT token that we are going to exchange
-        try {
-            const parts = subjectToken.split('.');
-            // Check if the token has the standard 3-part JWT structure
-            if (parts.length === 3) {
-                // Try to parse the token segments to validate it's a proper(ish) JWT
-                // Note: This is a very basic check and does not guarantee the token's validity
-                const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
-                const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-                platform.logger.debug(`JWT appears structured as expected (3 parts). Issuer: ${payload.iss}, kid: ${header.kid}`);
-            }
-            else {
-                // If not 3 parts, log a warning. It might be an opaque token or malformed.
-                platform.logger.debug(' OIDC token does not have the standard 3-part JWT structure.');
-            }
-        }
-        catch (error) {
-            platform.logger.warning(`Error during basic JWT structure check: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            // Continue with the original token, as we may be mistaken about its format
-        }
-    }
+    // Perform basic validation and logging if debug is enabled
+    // if (subjectToken) {
+    //   validateAndLogJwtStructure(platform, subjectToken);
+    // }
     const data = {
         'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
         'requested_token_type': 'urn:oci:token-type:oci-upst',
@@ -172,75 +171,125 @@ async function tokenExchangeJwtToUpst(platform, { tokenExchangeURL, clientCred, 
         }
     }
 }
-// Update configureOciCli to accept platform as first parameter
+/**
+ * Merge existing OCI config content by removing old profile section
+ * and appending a new profile block.
+ */
+function mergeOciConfig(existingRaw, profileName, profileObject) {
+    const lines = existingRaw.split('\n');
+    const filtered = [];
+    let inTargetSectionToRemove = false; // True if current lines are part of a section to be removed
+    for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith('[')) { // This line is a section header
+            if (trimmedLine === `[${profileName}]`) {
+                inTargetSectionToRemove = true; // This section matches the target, so we'll skip its lines
+            }
+            else {
+                inTargetSectionToRemove = false; // This is a different section, stop skipping
+                filtered.push(line); // Add this (different) section header line
+            }
+        }
+        else { // This line is not a section header (it's content or a comment or blank)
+            if (!inTargetSectionToRemove) {
+                // If not currently in a target section to remove, add the line,
+                // but only if it's not blank (to maintain original behavior for other sections).
+                if (trimmedLine !== '') {
+                    filtered.push(line);
+                }
+            }
+            // If inTargetSectionToRemove is true, we do nothing (skip the line)
+        }
+    }
+    const merged = filtered.length ? filtered.join('\n') + '\n' : '';
+    const newSection = `[${profileName}]\n` +
+        Object.entries(profileObject)
+            .map(([k, v]) => `${k}=${v}`)
+            .join('\n') +
+        '\n';
+    return merged + newSection;
+}
+/**
+ * Write data to a file and optionally set file permissions.
+ */
+async function writeAndChmod(filePath, data, perms) {
+    await fs.writeFile(filePath, data);
+    if (perms) {
+        await fs.chmod(filePath, perms);
+    }
+}
 async function configureOciCli(platform, config) {
     try {
-        const home = process.env.HOME || '';
+        const home = config.ociHome || process.env.HOME || '';
         if (!home) {
             throw new types_1.TokenExchangeError('HOME environment variable is not defined');
         }
         // Sanitize file paths to prevent path injection
         const ociConfigDir = path.resolve(path.join(home, '.oci'));
         const ociConfigFile = path.resolve(path.join(ociConfigDir, 'config'));
-        const ociPrivateKeyFile = path.resolve(path.join(home, 'private_key.pem'));
-        const ociPublicKeyFile = path.resolve(path.join(home, 'public_key.pem'));
-        const upstTokenFile = path.resolve(path.join(home, 'session'));
+        // Create a subfolder per profile to store keys and token
+        const profileName = config.ociProfile || 'DEFAULT';
+        // Ensure required OCI parameters are provided
+        if (!config.ociTenancy) {
+            throw new types_1.TokenExchangeError('OCI tenancy is not defined');
+        }
+        if (!config.ociRegion) {
+            throw new types_1.TokenExchangeError('OCI region is not defined');
+        }
+        // Create a subfolder per profile to store keys and token
+        const profileDir = path.resolve(path.join(ociConfigDir, profileName));
+        const ociPrivateKeyFile = path.resolve(path.join(profileDir, 'private_key.pem'));
+        const ociPublicKeyFile = path.resolve(path.join(profileDir, 'public_key.pem'));
+        const upstTokenFile = path.resolve(path.join(profileDir, 'session'));
         platform.logger.debug(`OCI Config Dir: ${ociConfigDir}`);
-        const ociConfig = `[DEFAULT]
-    user='not used'
-    fingerprint=${config.ociFingerprint}
-    key_file=${ociPrivateKeyFile}
-    tenancy=${config.ociTenancy}
-    region=${config.ociRegion}
-    security_token_file=${upstTokenFile}
-    `;
+        // Prepare profile object for INI
+        const profileObject = {
+            user: 'not used',
+            fingerprint: config.ociFingerprint,
+            key_file: ociPrivateKeyFile,
+            tenancy: config.ociTenancy,
+            region: config.ociRegion,
+            security_token_file: upstTokenFile
+        };
+        platform.logger.debug(`Preparing OCI config for profile [${profileName}]`);
         try {
             await fs.mkdir(ociConfigDir, { recursive: true });
+            // Also ensure directory for this profile exists
+            await fs.mkdir(profileDir, { recursive: true });
         }
         catch (error) {
-            throw new Error('Unable to create OCI Config folder');
+            throw new types_1.TokenExchangeError('Failed to create OCI Config folder', error);
         }
-        platform.logger.debug(`Created OCI Config : ${ociConfig}`);
+        // Export and validate keys first
+        const privateKeyPem = config.privateKey.export({ type: 'pkcs1', format: 'pem' });
+        const publicKeyPem = config.publicKey.export({ type: 'spki', format: 'pem' });
+        if (!privateKeyPem || typeof privateKeyPem !== 'string') {
+            throw new Error('Private key export failed or invalid type');
+        }
+        if (!publicKeyPem || typeof publicKeyPem !== 'string') {
+            throw new Error('Public key export failed or invalid type');
+        }
+        if (!config.upstToken || typeof config.upstToken !== 'string') {
+            throw new Error('Session token is undefined or invalid type');
+        }
+        if (!profileObject || typeof profileObject !== 'object') {
+            throw new Error('OCI config is undefined or invalid type');
+        }
+        platform.logger.debug('Validated all file contents before writing');
+        // Build and write all files using helpers
         try {
-            // Use await/try-catch for fs.access instead of chaining then/catch
-            try {
-                await fs.access(ociConfigFile);
-                platform.logger.warning(`Overwriting existing config file at ${ociConfigFile}`);
-            }
-            catch (e) {
-                // File does not exist, proceed silently
-            }
-            // Export and validate keys first
-            const privateKeyPem = config.privateKey.export({ type: 'pkcs1', format: 'pem' });
-            const publicKeyPem = config.publicKey.export({ type: 'spki', format: 'pem' });
-            if (!privateKeyPem || typeof privateKeyPem !== 'string') {
-                throw new Error('Private key export failed or invalid type');
-            }
-            if (!publicKeyPem || typeof publicKeyPem !== 'string') {
-                throw new Error('Public key export failed or invalid type');
-            }
-            if (!config.upstToken || typeof config.upstToken !== 'string') {
-                throw new Error('Session token is undefined or invalid type');
-            }
-            if (!ociConfig || typeof ociConfig !== 'string') {
-                throw new Error('OCI config is undefined or invalid type');
-            }
-            platform.logger.debug('Validated all file contents before writing');
-            await Promise.all([
-                fs.writeFile(ociConfigFile, ociConfig)
-                    .then(() => platform.logger.debug(`Successfully wrote OCI config to ${ociConfigFile}`)),
-                fs.writeFile(ociPrivateKeyFile, privateKeyPem)
-                    .then(() => fs.chmod(ociPrivateKeyFile, '600'))
-                    .then(() => platform.logger.debug(`Successfully wrote private key to ${ociPrivateKeyFile} with permissions 600`)),
-                fs.writeFile(ociPublicKeyFile, publicKeyPem)
-                    .then(() => platform.logger.debug(`Successfully wrote public key to ${ociPublicKeyFile}`)),
-                fs.writeFile(upstTokenFile, config.upstToken)
-                    .then(() => fs.chmod(upstTokenFile, '600'))
-                    .then(() => platform.logger.debug(`Successfully wrote session token to ${upstTokenFile}`))
-            ]);
+            const existingRaw = await fs.readFile(ociConfigFile, 'utf-8').catch(() => '');
+            const finalContent = mergeOciConfig(existingRaw, profileName, profileObject);
+            // Write config with secure permissions
+            await writeAndChmod(ociConfigFile, finalContent, '600');
+            platform.logger.debug(`Set permissions 600 on OCI config file ${ociConfigFile}`);
+            // Write keys and token
+            await writeAndChmod(ociPrivateKeyFile, privateKeyPem, '600');
+            await writeAndChmod(ociPublicKeyFile, publicKeyPem);
+            await writeAndChmod(upstTokenFile, config.upstToken, '600');
         }
-        catch (error) {
-            throw new types_1.TokenExchangeError('Failed to write OCI configuration files', error);
+        catch (err) {
+            throw new types_1.TokenExchangeError('Failed to write OCI configuration files', err instanceof Error ? err : undefined);
         }
     }
     catch (error) {
@@ -302,10 +351,10 @@ async function main() {
     }
     const platform = createPlatform(platformType);
     try {
-        const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region']
+        const config = ['oidc_client_identifier', 'domain_base_url', 'oci_tenancy', 'oci_region', 'oci_home', 'oci_profile']
             .reduce((acc, input) => ({
             ...acc,
-            [input]: platform.getInput(input, true)
+            [input]: platform.getInput(input, input !== 'oci_home' && input !== 'oci_profile')
         }), {});
         const retryCount = parseInt(platform.getInput('retry_count', false) || '0');
         if (isNaN(retryCount) || retryCount < 0) {
@@ -332,8 +381,12 @@ async function main() {
             retryCount
         });
         platform.logger.info(`OCI issued a Session Token `);
-        //Setup the OCI cli/sdk on the CI platform runner with the UPST token
+        // Resolve OCI home and profile, falling back to environment or defaults
+        const resolvedOciHome = config.oci_home || process.env.OCI_HOME;
+        const resolvedOciProfile = config.oci_profile || process.env.OCI_PROFILE || 'DEFAULT';
         const ociConfig = {
+            ociHome: resolvedOciHome,
+            ociProfile: resolvedOciProfile,
             privateKey,
             publicKey,
             upstToken: upstToken.token,

@@ -1,6 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CLIPlatform = void 0;
+/**
+ * Copyright (c) 2021, 2025 Oracle and/or its affiliates.
+ * Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
+ */
+const types_1 = require("./types");
 class CLIPlatform {
     constructor(config) {
         this.config = config;
@@ -13,11 +18,7 @@ class CLIPlatform {
         };
     }
     getInput(name, required = false) {
-        // Then check for direct environment variable (using common naming conventions)
-        const value = process.env[name.toUpperCase()] ||
-            process.env[`INPUT_${name.toUpperCase()}`] ||
-            process.env[`OCI_${name.toUpperCase()}`] ||
-            process.env[`OIDC_${name.toUpperCase()}`] || '';
+        const value = (0, types_1.resolveInput)(name);
         if (required && !value) {
             throw new Error(`Input required and not supplied: ${name}`);
         }
@@ -33,7 +34,7 @@ class CLIPlatform {
     isDebug() {
         return process.env.DEBUG === 'true';
     }
-    async getOIDCToken(audience) {
+    async getOIDCToken(_audience) {
         if (this.config.tokenEnvVar) {
             const token = process.env[this.config.tokenEnvVar];
             if (!token) {

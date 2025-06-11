@@ -26,16 +26,18 @@ deploy:
     - |
       cd dist &&
       PLATFORM=gitlab \
-      OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
-      DOMAIN_URL=${DOMAIN_URL} \
+      OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} \
+      DOMAIN_BASE_URL=${DOMAIN_BASE_URL} \
       OCI_TENANCY=${OCI_TENANCY} \
       OCI_REGION=${OCI_REGION} \
-      RETRY_COUNT=3 \
+      OCI_HOME=${$CI_PROJECT_DIR} \
+      OCI_PROFILE=${OCI_PROFILE} \
+      RETRY_COUNT=${RETRY_COUNT:-3} \
       node cli.js
     
     # Return to workspace root and verify OCI CLI configuration
     - cd ../..
-    - oci os ns get
+    - oci --auth security_token os ns get
   
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
@@ -64,11 +66,13 @@ deploy_specific_branch:
     - |
       cd dist &&
       PLATFORM=gitlab \
-      OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
-      DOMAIN_URL=${DOMAIN_URL} \
+      OIDC_CLIENT_IDENTIFIER=${OIDC_CLIENT_IDENTIFIER} \
+      DOMAIN_BASE_URL=${DOMAIN_BASE_URL} \
       OCI_TENANCY=${OCI_TENANCY} \
       OCI_REGION=${OCI_REGION} \
-      RETRY_COUNT=3 \
+      OCI_HOME=${$CI_PROJECT_DIR} \
+      OCI_PROFILE=${OCI_PROFILE} \
+      RETRY_COUNT=${RETRY_COUNT:-3} \
       node cli.js
     
     # Return to workspace root and verify OCI CLI configuration

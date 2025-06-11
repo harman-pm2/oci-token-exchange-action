@@ -1,4 +1,8 @@
-import crypto from 'crypto';
+/**
+ * Copyright (c) 2021, 2025 Oracle and/or its affiliates.
+ * Licensed under the Universal Permissive License v1.0 as shown at https://oss.oracle.com/licenses/upl.
+ */
+import crypto from "crypto";
 /**
  * Configuration for token exchange operation
  */
@@ -33,6 +37,14 @@ export interface TokenExchangeConfig {
  */
 export interface OciConfig {
     /**
+     * Custom home directory for OCI config. Defaults to $HOME if not set.
+     */
+    ociHome?: string;
+    /**
+     * Profile name header for OCI config. Defaults to 'DEFAULT'.
+     */
+    ociProfile?: string;
+    /**
      * Private key used for OCI authentication
      */
     privateKey: crypto.KeyObject;
@@ -65,6 +77,14 @@ export interface ConfigInputs {
     domain_base_url: string;
     oci_tenancy: string;
     oci_region: string;
+    /**
+     * Base folder for OCI config (.oci) directory. Defaults to $HOME.
+     */
+    oci_home?: string;
+    /**
+     * Name of the OCI CLI profile to create. Defaults to 'DEFAULT'.
+     */
+    oci_profile?: string;
 }
 /**
  * Response from token exchange operation
