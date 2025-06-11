@@ -58,36 +58,56 @@ jobs:
       - name: Set Semantic Release Outputs
         id: sr_outputs
         run: |
+          echo "--- Debug: Initial content of semantic-release-output.json ---"
+          if [ -f semantic-release-output.json ]; then
+            cat semantic-release-output.json
+          else
+            echo "semantic-release-output.json does NOT exist at the start of the step."
+          fi
+          echo "--- End of initial content ---"
+
           if [ -f semantic-release-output.json ] && [ -s semantic-release-output.json ]; then
-            # A non-empty file exists, try to parse it
-            if jq -e . semantic-release-output.json > /dev/null; then
-              echo "semantic-release-output.json content:"
-              cat semantic-release-output.json
-              VERSION=$(jq -r '.nextRelease.version // ""' semantic-release-output.json)
-              NOTES=$(jq -r '.nextRelease.notes // ""' semantic-release-output.json)
+            # Attempt to extract JSON content, assuming it starts with '{' and is at the end
+            # This helps if there's leading non-JSON text (like logs) in the file.
+            JSON_CANDIDATE=$(sed -n '/^{/,$p' semantic-release-output.json)
+
+            if [ -n "$JSON_CANDIDATE" ] && echo "$JSON_CANDIDATE" | jq -e . > /dev/null; then
+              echo "Successfully extracted and validated JSON from semantic-release-output.json."
+              echo "--- Extracted JSON content ---"
+              echo "$JSON_CANDIDATE"
+              echo "--- End of extracted JSON content ---"
+
+              VERSION=$(echo "$JSON_CANDIDATE" | jq -r '.nextRelease.version // ""')
+              NOTES_RAW=$(echo "$JSON_CANDIDATE" | jq -r '.nextRelease.notes // ""')
               
               if [ -n "$VERSION" ]; then
                 echo "new_release_published=true" >> $GITHUB_OUTPUT
                 echo "new_release_version=$VERSION" >> $GITHUB_OUTPUT
-                # For notes, escape newlines for multiline output
-                NOTES_ESCAPED=$(echo "$NOTES" | awk '{printf "%s\\n", $0}' | sed '$ s/\\n$//')
-                echo "new_release_notes=${NOTES_ESCAPED}" >> $GITHUB_OUTPUT
-                echo "Successfully parsed release information."
+                
+                # Set multiline notes using heredoc for GITHUB_OUTPUT
+                echo "new_release_notes<<EOF_NOTES" >> $GITHUB_OUTPUT
+                echo "$NOTES_RAW" >> $GITHUB_OUTPUT
+                echo "EOF_NOTES" >> $GITHUB_OUTPUT
+
+                echo "Successfully parsed release information: Version $VERSION"
               else
-                echo "No new release version found in semantic-release-output.json."
+                echo "No new release version found in the extracted JSON (.nextRelease.version was empty or null)."
                 echo "new_release_published=false" >> $GITHUB_OUTPUT
                 echo "new_release_version=" >> $GITHUB_OUTPUT
                 echo "new_release_notes=" >> $GITHUB_OUTPUT
               fi
             else
-              echo "semantic-release-output.json is not valid JSON or empty. Assuming no release."
-              cat semantic-release-output.json # Print content for debugging
+              echo "Failed to extract or validate JSON from semantic-release-output.json."
+              echo "Original file content was (if any):"
+              cat semantic-release-output.json || echo "File was empty or unreadable."
+              echo "Attempted JSON extraction (JSON_CANDIDATE was):"
+              echo "$JSON_CANDIDATE"
               echo "new_release_published=false" >> $GITHUB_OUTPUT
               echo "new_release_version=" >> $GITHUB_OUTPUT
               echo "new_release_notes=" >> $GITHUB_OUTPUT
             fi
           else
-            echo "semantic-release-output.json does not exist or is empty. Assuming no release."
+            echo "semantic-release-output.json does not exist or is empty."
             echo "new_release_published=false" >> $GITHUB_OUTPUT
             echo "new_release_version=" >> $GITHUB_OUTPUT
             echo "new_release_notes=" >> $GITHUB_OUTPUT
