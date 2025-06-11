@@ -35,6 +35,9 @@ jobs:
       - name: Build Project
         run: npm run build
 
+      - name: Run tests
+        run: npm test
+
       - name: Run Semantic Release
         id: semantic # Add an ID to reference the output
         run: npx semantic-release
