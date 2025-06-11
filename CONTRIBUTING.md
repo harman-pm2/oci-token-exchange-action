@@ -154,7 +154,7 @@ The project follows a structured process from development to production, using a
    - Merging to `main` will automatically trigger:
      1. The `build-and-commit.yml` workflow (ensures `dist/` is current)
      2. The `release.yml` workflow (handles versioning and publishing)
-   - `semantic-release` will then:
+     3. `semantic-release` will then:
      - Analyze the commits on `main` since the last release tag (using rules from `.releaserc.json`).
      - Determine the appropriate next version number based on conventional commits.
      - Generate release notes automatically from commit messages.
