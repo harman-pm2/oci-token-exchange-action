@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Add this line to grant write permissions
     steps:
     # 1. Checks out your repository code
     - uses: actions/checkout@v4
