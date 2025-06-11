@@ -1,13 +1,19 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main # Trigger on pushes to the main branch
+  workflow_run:
+    workflows: ["Build and Commit"] # Name of the triggering workflow
+    types:
+      - completed
+    branches: # Filters for the branch the "Build and Commit" workflow ran on
+      - main
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Condition to ensure this job only runs if the triggering workflow ("Build and Commit")
+    # was itself triggered by a 'push' event to 'main' and completed successfully.
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
     permissions:
       # Needs write access to create releases, read packages, and write for discussions (for notes)
       contents: 'write'
@@ -21,8 +27,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: main # Explicitly check out the main branch
+          ref: main # Explicitly check out the latest main branch
           fetch-depth: 0 # Ensure full history is fetched
+          # token: ${{ secrets.SEMANTIC_RELEASE_PAT }} # Optional: use PAT if default GITHUB_TOKEN has issues with workflow_run checkout, but usually not needed for same repo.
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -42,10 +49,9 @@ jobs:
         id: semantic # Add an ID to reference the output
         run: npx semantic-release
         env:
-          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }} # Changed from GITHUB_TOKEN
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # Add steps to update major version tag
       - name: Get released version
         # Check if semantic-release step produced a new version
         if: steps.semantic.outputs.new_release_published == 'true' 
@@ -53,6 +59,7 @@ jobs:
           echo "RELEASE_VERSION=${{ steps.semantic.outputs.new_release_version }}" >> $GITHUB_ENV
           echo "New version released: ${{ steps.semantic.outputs.new_release_version }}"
 
+      # Add steps to update major version tag
       - name: Update Major Version Tag (e.g., v1)
         if: env.RELEASE_VERSION # Only run if a new version was released
         run: |
