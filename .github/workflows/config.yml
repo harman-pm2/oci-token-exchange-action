@@ -1,6 +1,14 @@
 name: Run OCI Token Exchange Action
 
-on: [push] 
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
 
 jobs:
   build:
@@ -63,7 +71,7 @@ jobs:
   # Add a separate job for Dependabot that only runs basic checks
   dependabot-check:
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    if: github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' # Ensure it only runs for PRs from dependabot
     permissions:
       contents: read
     steps:
