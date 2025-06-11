@@ -48,9 +48,9 @@ jobs:
       - name: Run Semantic Release
         id: semantic
         run: |
-          npx semantic-release > semantic-release-output.json || true 
+          npx semantic-release -q > semantic-release-output.json || true 
+          # '-q' (quiet) should suppress logs, leaving only JSON in stdout.
           # '|| true' ensures the step doesn't fail if semantic-release exits with a non-zero code when no release is made.
-          # We'll check the content of semantic-release-output.json to determine if a release happened.
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -58,7 +58,7 @@ jobs:
       - name: Set Semantic Release Outputs
         id: sr_outputs
         run: |
-          echo "--- Debug: Initial content of semantic-release-output.json ---"
+          echo "--- Debug: Initial content of semantic-release-output.json (after 'semantic-release -q') ---"
           if [ -f semantic-release-output.json ]; then
             cat semantic-release-output.json
           else
@@ -67,47 +67,43 @@ jobs:
           echo "--- End of initial content ---"
 
           if [ -f semantic-release-output.json ] && [ -s semantic-release-output.json ]; then
-            # Attempt to extract JSON content, assuming it starts with '{' and is at the end
-            # This helps if there's leading non-JSON text (like logs) in the file.
-            JSON_CANDIDATE=$(sed -n '/^{/,$p' semantic-release-output.json)
+            # With '-q', the file should ideally contain only JSON or be empty.
+            JSON_OUTPUT=$(cat semantic-release-output.json)
 
-            if [ -n "$JSON_CANDIDATE" ] && echo "$JSON_CANDIDATE" | jq -e . > /dev/null; then
-              echo "Successfully extracted and validated JSON from semantic-release-output.json."
-              echo "--- Extracted JSON content ---"
-              echo "$JSON_CANDIDATE"
-              echo "--- End of extracted JSON content ---"
+            if echo "$JSON_OUTPUT" | jq -e . > /dev/null; then
+              echo "Successfully validated JSON from semantic-release-output.json."
+              echo "--- JSON content ---"
+              echo "$JSON_OUTPUT"
+              echo "--- End of JSON content ---"
 
-              VERSION=$(echo "$JSON_CANDIDATE" | jq -r '.nextRelease.version // ""')
-              NOTES_RAW=$(echo "$JSON_CANDIDATE" | jq -r '.nextRelease.notes // ""')
+              VERSION=$(echo "$JSON_OUTPUT" | jq -r '.nextRelease.version // ""')
+              NOTES_RAW=$(echo "$JSON_OUTPUT" | jq -r '.nextRelease.notes // ""')
               
               if [ -n "$VERSION" ]; then
                 echo "new_release_published=true" >> $GITHUB_OUTPUT
                 echo "new_release_version=$VERSION" >> $GITHUB_OUTPUT
                 
-                # Set multiline notes using heredoc for GITHUB_OUTPUT
                 echo "new_release_notes<<EOF_NOTES" >> $GITHUB_OUTPUT
                 echo "$NOTES_RAW" >> $GITHUB_OUTPUT
                 echo "EOF_NOTES" >> $GITHUB_OUTPUT
 
                 echo "Successfully parsed release information: Version $VERSION"
               else
-                echo "No new release version found in the extracted JSON (.nextRelease.version was empty or null)."
+                echo "No new release version found in the JSON (.nextRelease.version was empty or null)."
                 echo "new_release_published=false" >> $GITHUB_OUTPUT
                 echo "new_release_version=" >> $GITHUB_OUTPUT
                 echo "new_release_notes=" >> $GITHUB_OUTPUT
               fi
             else
-              echo "Failed to extract or validate JSON from semantic-release-output.json."
-              echo "Original file content was (if any):"
-              cat semantic-release-output.json || echo "File was empty or unreadable."
-              echo "Attempted JSON extraction (JSON_CANDIDATE was):"
-              echo "$JSON_CANDIDATE"
+              echo "Failed to validate semantic-release-output.json as JSON."
+              echo "File content was:"
+              echo "$JSON_OUTPUT" # This will be the same as cat semantic-release-output.json
               echo "new_release_published=false" >> $GITHUB_OUTPUT
               echo "new_release_version=" >> $GITHUB_OUTPUT
               echo "new_release_notes=" >> $GITHUB_OUTPUT
             fi
           else
-            echo "semantic-release-output.json does not exist or is empty."
+            echo "semantic-release-output.json does not exist or is empty (no release made or -q suppressed all output)."
             echo "new_release_published=false" >> $GITHUB_OUTPUT
             echo "new_release_version=" >> $GITHUB_OUTPUT
             echo "new_release_notes=" >> $GITHUB_OUTPUT
