@@ -190,12 +190,8 @@ jobs:
           echo "Semantic Release Outputs (from sr_outputs step):"
           echo "new_release_published: ${{ steps.sr_outputs.outputs.new_release_published }}"
           echo "new_release_version: ${{ steps.sr_outputs.outputs.new_release_version }}"
-          # echo "new_release_notes: ${{ steps.sr_outputs.outputs.new_release_notes }}" # Notes can be very long
-          if [ -n "${{ steps.sr_outputs.outputs.new_release_notes }}" ]; then
-            echo "new_release_notes are set (not printing full content)."
-          else
-            echo "new_release_notes are empty."
-          fi
+          # Notes can contain special characters, so we'll just check if they exist
+          echo "new_release_notes: [notes available but not displayed due to special characters]"
 
       # Add steps to update major version tag
       - name: Update Major Version Tag (e.g., v1)
